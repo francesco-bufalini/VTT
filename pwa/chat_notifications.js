@@ -40,12 +40,18 @@ export function isIncomingExternalEvent(entry,{initialHistory=false,locallySentI
  return Boolean(!initialHistory&&entry?.id&&['chat','roll','action'].includes(entry.kind)&&
    !locallySentIds?.has(entry.id)&&!localIds?.has(entry.id));
 }
+function chatIsVisible() {
+  const events = document.querySelector("#events");
+  return document.visibilityState === "visible" && document.hasFocus() &&
+    events && !events.closest("[hidden]");
+}
 export async function notifyIncomingChat(entry, sessionId = "") {
   if (!notificationsEnabled() || !entry || !["chat", "roll", "action"].includes(entry.kind)) return;
   // Avoid distracting duplicate alerts while the chat is visible and focused.
-  if (document.visibilityState === "visible" && document.hasFocus() &&
-      (document.querySelector("#events") && !document.querySelector("#events").closest("[hidden]"))) return;
+  if (chatIsVisible()) return;
   const registration = await navigator.serviceWorker.ready;
+  // The user may disable alerts or open the chat while the worker starts.
+  if (!notificationsEnabled() || chatIsVisible()) return;
   const author = String(entry.author || "Giocatore").slice(0, 80);
   const text = String(entry.kind === "roll" ? ((entry.label || entry.die || "Tiro di dado") + ": " + (entry.total ?? "—")) : (entry.text || "Nuovo messaggio")).slice(0, 180);
   await registration.showNotification((entry.kind === "roll" ? "🎲 VTT · " : "💬 VTT · ") + author, {
