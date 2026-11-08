@@ -65,7 +65,7 @@ func open_manage_dialog() -> void:
 func _refresh_manage_list() -> void:
 	_manage_list.clear()
 	for record: Dictionary in _records:
-		_manage_list.add_item("%s · %g × %g cubi" % [record.name, float(record.width_cells), float(record.height_cells)])
+		_manage_list.add_item("%s · %s × %s cubi" % [String(record.name), str(record.width_cells), str(record.height_cells)])
 
 
 func _remove_selected_plane() -> void:
