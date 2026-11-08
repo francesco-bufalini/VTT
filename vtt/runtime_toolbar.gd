@@ -12,6 +12,7 @@ const COMBAT_END := 72
 const ITEM_CREATE := 80
 const ITEM_MANAGE := 81
 const MAP_IMAGE_IMPORT := 82
+const MAP_IMAGE_MANAGE := 83
 
 const MEASURE_RULER := 30
 const MEASURE_SPHERE := 31
@@ -112,7 +113,8 @@ func _build_toolbar() -> void:
 		["Posiziona carro romano (2×2)", ITEM_CREATE],
 		["Gestisci item / associa token…", ITEM_MANAGE],
 		["Mappe 2D"],
-		["Importa immagine su piano 2D…", MAP_IMAGE_IMPORT]
+		["Importa immagine su piano 2D…", MAP_IMAGE_IMPORT],
+		["Gestisci piani immagine 2D…", MAP_IMAGE_MANAGE]
 	], _on_master))
 
 	# Open the current PWA in a desktop WebView; no native creature editor.
@@ -217,7 +219,7 @@ func _on_master(id: int) -> void:
 			board_root.call("start_combat_mode")
 		COMBAT_END:
 			board_root.call("end_combat_mode")
-		ITEM_CREATE, ITEM_MANAGE, MAP_IMAGE_IMPORT:
+		ITEM_CREATE, ITEM_MANAGE, MAP_IMAGE_IMPORT, MAP_IMAGE_MANAGE:
 			board_root.call("_on_context_menu_id_pressed", id)
 
 
