@@ -42,6 +42,8 @@ const CONTEXT_TOKEN_ACTIVE_SPELL := 102
 const CONTEXT_CLEAR_SPELL_HIGHLIGHT := 103
 const CONTEXT_ITEM_CREATE := 80
 const CONTEXT_ITEM_MANAGE := 81
+const CONTEXT_IMPORT_MAP_IMAGE := 82
+const CONTEXT_MANAGE_MAP_IMAGES := 83
 const CAMPAIGN_EDITOR_SCENE_PATH := "res://vtt/editor/campaign_editor.tscn"
 const LOCAL_TOKEN_CATALOG := "res://dist/token_packs/token_catalog.json"
 const LOCAL_TOKEN_PACK_ROOT := "res://dist/token_packs"
@@ -183,6 +185,7 @@ var _token_effect_text: RichTextLabel
 var _editing_token: CharacterBody3D
 var token_drag: Node
 var item_controller: Node
+var map_image_controller: Node
 var mount_controller: Node
 var _linked_token_pick_follower: CharacterBody3D
 var spell_system: Node
@@ -262,6 +265,10 @@ func _ready() -> void:
 	mount_controller.name = "MountController"
 	add_child(mount_controller)
 	mount_controller.setup(self)
+	map_image_controller = preload("res://vtt/map_image_controller.gd").new()
+	map_image_controller.name = "MapImageController"
+	add_child(map_image_controller)
+	map_image_controller.call("setup", self)
 	board_sync = preload("res://network/board_sync.gd").new()
 	add_child(board_sync)
 	board_sync.setup(self, token_scene, tokens_root, measurement_tool)
@@ -1485,6 +1492,9 @@ func _input(event: InputEvent) -> void:
 	# widget owns the keyboard.
 	if event is InputEventKey and get_viewport().gui_get_focus_owner() != null:
 		return
+	if map_image_controller != null and map_image_controller.is_placing():
+		# Placement owns world clicks; regular token/spell handlers must not react.
+		return
 	if _linked_token_pick_follower != null and _handle_move_with_token_pick_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -1919,6 +1929,9 @@ func _reposition_selected_at_context() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if map_image_controller != null and map_image_controller.handle_placement_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	# A world click (including token selection) must dismiss the previously
 	# focused menu, otherwise Space can activate its last action.
 	if (
@@ -2174,6 +2187,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _history_motion_in_progress() -> bool:
 	if item_controller != null and item_controller.placing:
+		return true
+	if map_image_controller != null and map_image_controller.is_placing():
 		return true
 	if (
 		token_drag != null
@@ -3203,6 +3218,9 @@ func _show_context_menu(screen_position: Vector2) -> void:
 	master_menu.add_separator("Oggetti sulla mappa")
 	master_menu.add_item("Posiziona carro romano (2×2)", CONTEXT_ITEM_CREATE)
 	master_menu.add_item("Gestisci item / associa token…", CONTEXT_ITEM_MANAGE)
+	master_menu.add_separator("Mappe 2D")
+	master_menu.add_item("Importa immagine su piano 2D…", CONTEXT_IMPORT_MAP_IMAGE)
+	master_menu.add_item("Gestisci piani immagine 2D…", CONTEXT_MANAGE_MAP_IMAGES)
 	context_menu.add_submenu_node_item("Master", master_menu)
 	context_game_menu.add_separator("Combattimento")
 	var initiative_visible: bool = (
@@ -3326,6 +3344,17 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		if spell_system != null and is_instance_valid(spell_system):
 			spell_system.call("open_panel")
 		context_menu.hide()
+		return
+
+	if id == CONTEXT_MANAGE_MAP_IMAGES:
+		context_menu.hide()
+		if map_image_controller != null:
+			map_image_controller.call("open_manage_dialog")
+		return
+	if id == CONTEXT_IMPORT_MAP_IMAGE:
+		context_menu.hide()
+		if map_image_controller != null:
+			map_image_controller.call("open_import_dialog")
 		return
 
 	if id == CONTEXT_ITEM_CREATE or id == CONTEXT_ITEM_MANAGE:

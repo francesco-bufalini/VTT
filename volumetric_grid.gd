@@ -1029,6 +1029,10 @@ func _register_added_collision_shape_by_id(instance_id: int) -> void:
 		return
 
 	var collision := value as CollisionShape3D
+	# Removed image planes may still be valid Objects when a deferred scan runs.
+	# Reading their global transform after leaving the tree logs engine errors.
+	if not collision.is_inside_tree():
+		return
 	if _register_map_shape(collision):
 		var bounds: AABB = _collision_world_aabb(collision)
 		_invalidate_chunks_for_aabb(bounds)
@@ -1049,7 +1053,7 @@ func _on_tree_node_removed(node: Node) -> void:
 
 
 func _register_map_shape(collision: CollisionShape3D) -> bool:
-	if collision == null or not is_instance_valid(collision):
+	if collision == null or not is_instance_valid(collision) or not collision.is_inside_tree():
 		return false
 	if collision.shape == null:
 		return false

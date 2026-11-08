@@ -50,6 +50,7 @@ const ActiveSpells = preload("res://vtt/creature_active_spells.gd")
 var _mobile_capture_busy := false
 var _mobile_views: Dictionary = {}
 const MapDataController = preload("res://vtt/map_data_controller.gd")
+const MapImageController = preload("res://vtt/map_image_controller.gd")
 var map_data_controller: MapDataController
 var board_root: Node
 var token_scene: PackedScene
@@ -1017,6 +1018,10 @@ func valid_snapshot(snapshot: Variant) -> bool:
 		return false
 	if snapshot.has("camera") and not _valid_transform_payload(snapshot.get("camera")):
 		return false
+	if not MapImageController.valid_records(snapshot.get("map_images", [])):
+		return false
+	if board_root.get_node_or_null("MapImageController") == null and snapshot.get("map_images", []) != []:
+		return false
 	var controller := board_root.get_node_or_null("EncounterProgressController")
 	if controller != null:
 		if not snapshot.get("encounter") is Dictionary or not controller._valid_state(snapshot.encounter) or controller.is_advancing:
@@ -1496,6 +1501,8 @@ func create_snapshot() -> Dictionary:
 		for node in get_tree().get_nodes_in_group(group_name):
 			if not (node is Node3D) or node.is_in_group("dnd_item") or seen.has(node) or not board_root.is_ancestor_of(node) or node.is_queued_for_deletion(): continue
 			seen[node]=true; objects.append(_serialize_node(node as Node3D, group_name))
+	var images: Node = board_root.get_node_or_null("MapImageController")
+	var map_images: Array = images.call("serialize_map_images") if images != null else []
 	var aoes: Array = []
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("serialize_persistent_aoes"): aoes=measurement_tool.call("serialize_persistent_aoes")
 	var controller := board_root.get_node_or_null("EncounterProgressController")
@@ -1519,6 +1526,7 @@ func create_snapshot() -> Dictionary:
 		"parties": _party_manifest_from_objects(objects),
 		"items": board_root.item_controller.serialize_items() if board_root.get("item_controller") != null else [],
 		"aoes": aoes,
+		"map_images": map_images,
 		"encounter": state,
 		"initiative": initiative,
 	}
@@ -1705,6 +1713,9 @@ func apply_snapshot(snapshot: Dictionary) -> bool:
 	if board_root.get("mount_controller") != null:
 		board_root.mount_controller.refresh_all()
 	if is_instance_valid(measurement_tool) and measurement_tool.has_method("apply_persistent_aoes"): measurement_tool.call("apply_persistent_aoes", snapshot.get("aoes",[]))
+	var image_controller: Node = board_root.get_node_or_null("MapImageController")
+	if image_controller != null and not bool(image_controller.call("apply_map_images", snapshot.get("map_images", []))):
+		return false
 	var initiative_tracker: Node = _initiative_tracker()
 	if initiative_tracker == null:
 		return false

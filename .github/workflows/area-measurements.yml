@@ -5,6 +5,9 @@ on:
     paths:
       - "measurement_tool.gd"
       - "dnd_base.gd"
+      - "vtt/map_image_controller.gd"
+      - "vtt/map_image_preview.gd"
+      - "tests/test_map_image_planes.gd"
       - "vtt/spells/spell_target_overlay_2d.gd"
       - "tests/test_area_dimensions.gd"
       - "tests/test_measurement_token_elevation.gd"
@@ -14,6 +17,9 @@ on:
     paths:
       - "measurement_tool.gd"
       - "dnd_base.gd"
+      - "vtt/map_image_controller.gd"
+      - "vtt/map_image_preview.gd"
+      - "tests/test_map_image_planes.gd"
       - "vtt/spells/spell_target_overlay_2d.gd"
       - "tests/test_area_dimensions.gd"
       - "tests/test_measurement_token_elevation.gd"
@@ -62,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
-          for test in test_area_dimensions test_measurement_token_elevation test_aoe_sync; do
+          for test in test_area_dimensions test_measurement_token_elevation test_aoe_sync test_map_image_planes; do
             echo "== ${test}.gd =="
             log=$(mktemp)
             if ! timeout 110s "$GODOT" --headless --path . --script "res://tests/${test}.gd" >"$log" 2>&1; then
