@@ -820,11 +820,7 @@ func _on_2d_view_selected(id: int) -> void:
 			board_root.call("set_2d_view_enabled", true)
 			_set_map_edit_layer(true)
 			if map_image_file_dialog != null:
-				map_image_file_dialog.reset_size()
-				map_image_file_dialog.popup_centered_clamped(
-					Vector2i(900, 640),
-					0.96
-				)
+				DialogLayout.popup(map_image_file_dialog, Vector2i(900, 640), 0.92)
 		VIEW_2D_IMAGE_RESIZE:
 			if map_image_node == null or not is_instance_valid(map_image_node):
 				_set_status("Nessuna immagine 2D da ridimensionare")
