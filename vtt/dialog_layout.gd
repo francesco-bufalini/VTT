@@ -65,7 +65,9 @@ static func popup(
 		accept.add_theme_constant_override("buttons_min_width", 100)
 		accept.add_theme_constant_override("buttons_min_height", 34)
 		accept.get_label().autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_keep_body_within_viewport(accept, fallback_ratio)
+		# FileDialog owns a built-in file browser; keep its own content tree.
+		if not dialog is FileDialog:
+			_keep_body_within_viewport(accept, fallback_ratio)
 	# Desktop previously re-enabled wrap_controls, letting a late Label/HBox
 	# minimum size override max_size and push the modal off the screen.
 	dialog.wrap_controls = false
@@ -160,7 +162,12 @@ static func _check_first_frame_layout(
 	dialog: Window, preferred_size: Vector2i, fallback_ratio: float
 ) -> void:
 	var tree: SceneTree = dialog.get_tree()
-	await tree.process_frame
-	if not is_instance_valid(dialog) or not dialog.visible:
-		return
-	_fit_window(dialog, preferred_size, fallback_ratio)
+	# Controls can measure their contents after the initial popup. Refit on
+	# two frames so delayed controls never push Confirm below the viewport.
+	for _frame: int in range(2):
+		await tree.process_frame
+		if not is_instance_valid(dialog) or not dialog.visible:
+			return
+		if dialog is AcceptDialog and not dialog is FileDialog:
+			_keep_body_within_viewport(dialog as AcceptDialog, fallback_ratio)
+		_fit_window(dialog, preferred_size, fallback_ratio)
