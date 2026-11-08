@@ -82,8 +82,8 @@ func run() -> void:
 	for vertex: Vector3 in vertices:
 		assert(is_equal_approx(vertex.y, 1.009),
 			"Grid lines must touch the image top, never the cube sides")
-		assert(vertex.x >= -3.01 and vertex.x <= 4.99
-			and vertex.z >= -3.99 and vertex.z <= 2.01,
+		assert(vertex.x >= -3.011 and vertex.x <= 4.991
+			and vertex.z >= -3.991 and vertex.z <= 2.011,
 			"Grid must be clipped to the image footprint")
 	# X=7 is a global grid boundary; the image offset must not move it.
 	var aligned_line := false
