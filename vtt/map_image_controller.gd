@@ -3,6 +3,8 @@ extends Node3D
 ## Images are embedded in snapshots so local saves, undo and peers retain them.
 
 const ImagePreview = preload("res://vtt/map_image_preview.gd")
+const DialogLayout = preload("res://vtt/dialog_layout.gd")
+const GRID_SURFACE_BIAS_CELLS := 0.009
 const MAX_SOURCE_BYTES := 24 * 1024 * 1024
 const MAX_IMAGE_BYTES := 1200000
 const MAX_ENCODED_TOTAL := 3200000
@@ -43,6 +45,9 @@ func setup(root: Node3D) -> void:
 	_images_root.name = "PlacedMapImages"
 	add_child(_images_root)
 	_build_dialogs()
+	var grid: Node3D = board_root.get_node_or_null("VolumetricGrid") as Node3D
+	if grid != null:
+		grid.visibility_changed.connect(_sync_grid_visibility)
 
 
 func _cell_size() -> float:
@@ -53,13 +58,13 @@ func open_import_dialog() -> void:
 	if _placing:
 		_cancel_placement()
 	board_root.call("release_camera_control")
-	_file_dialog.popup_centered(Vector2i(850, 600))
+	DialogLayout.popup(_file_dialog, Vector2i(850, 600))
 
 
 func open_manage_dialog() -> void:
 	_refresh_manage_list()
 	board_root.call("release_camera_control")
-	_manage_dialog.popup_centered(Vector2i(490, 440))
+	DialogLayout.popup(_manage_dialog, Vector2i(490, 440))
 
 
 func _refresh_manage_list() -> void:
@@ -240,13 +245,13 @@ func _on_image_selected(path: String) -> void:
 	_offset_z.set_value_no_signal(0.0)
 	_refresh_preview()
 	board_root.call("release_camera_control")
-	_settings.popup_centered(Vector2i(660, 695))
+	DialogLayout.popup(_settings, Vector2i(660, 695))
 
 
 func _show_error(message: String) -> void:
 	_error_dialog.dialog_text = message
 	board_root.call("release_camera_control")
-	_error_dialog.popup_centered()
+	DialogLayout.popup(_error_dialog, Vector2i(490, 240))
 
 
 func _on_width_changed(value: float) -> void:
@@ -450,6 +455,7 @@ func apply_map_images(value: Variant) -> bool:
 	var grid: Node = board_root.get_node_or_null("VolumetricGrid")
 	if grid != null and grid.has_method("mark_map_dirty"):
 		grid.call("mark_map_dirty")
+	_sync_grid_visibility()
 	return true
 
 
@@ -480,6 +486,28 @@ func _build_plane(record: Dictionary, texture: Texture2D, ghost: bool) -> Node3D
 	surface.position = offset + Vector3.UP * (cell + 0.002 * cell)
 	root.add_child(surface)
 	if not ghost:
+		# Only the top face of the image has a drawn grid, in both 2D and 3D.
+		var lines: PackedVector3Array = surface_grid_vertices(record, cell)
+		if not lines.is_empty():
+			var arrays: Array = []
+			arrays.resize(Mesh.ARRAY_MAX)
+			arrays[Mesh.ARRAY_VERTEX] = lines
+			var line_mesh := ArrayMesh.new()
+			line_mesh.add_surface_from_arrays(Mesh.PRIMITIVE_LINES, arrays)
+			var line_material := StandardMaterial3D.new()
+			line_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			line_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			line_material.albedo_color = Color(0.96, 0.89, 0.69, 0.83)
+			line_material.render_priority = 1
+			line_mesh.surface_set_material(0, line_material)
+			var image_grid := MeshInstance3D.new()
+			image_grid.name = "SurfaceGrid"
+			image_grid.mesh = line_mesh
+			image_grid.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			var global_grid: Node3D = board_root.get_node_or_null("VolumetricGrid") as Node3D
+			image_grid.visible = global_grid == null or global_grid.visible
+			root.add_child(image_grid)
+
 		var solid := StaticBody3D.new()
 		solid.name = "OneCubeSupport"
 		solid.collision_layer = 1
@@ -493,6 +521,89 @@ func _build_plane(record: Dictionary, texture: Texture2D, ghost: bool) -> Node3D
 		box.shape = shape
 		solid.add_child(box)
 	return root
+
+
+# The grid coordinates are global and never follow the fractional image offset.
+# Every vertex lies only on the upper face, slightly above the image texture.
+static func surface_grid_vertices(record: Dictionary, cell: float) -> PackedVector3Array:
+	var result := PackedVector3Array()
+	if cell <= 0.0:
+		return result
+	var anchor: Dictionary = record.get("position", {})
+	var anchor_x: float = float(anchor.get("x", 0.0))
+	var anchor_z: float = float(anchor.get("z", 0.0))
+	var half_x: float = float(record.get("width_cells", 0.0)) * cell * 0.5
+	var half_z: float = float(record.get("height_cells", 0.0)) * cell * 0.5
+	var offset_x: float = float(record.get("offset_x", 0.0)) * cell
+	var offset_z: float = float(record.get("offset_z", 0.0)) * cell
+	var min_x: float = offset_x - half_x
+	var max_x: float = offset_x + half_x
+	var min_z: float = offset_z - half_z
+	var max_z: float = offset_z + half_z
+	var y: float = cell * (1.0 + GRID_SURFACE_BIAS_CELLS)
+	for column: int in range(
+		ceili((anchor_x + min_x) / cell),
+		floori((anchor_x + max_x) / cell) + 1
+	):
+		var x: float = float(column) * cell - anchor_x
+		result.append(Vector3(x, y, min_z))
+		result.append(Vector3(x, y, max_z))
+	for row: int in range(
+		ceili((anchor_z + min_z) / cell),
+		floori((anchor_z + max_z) / cell) + 1
+	):
+		var z: float = float(row) * cell - anchor_z
+		result.append(Vector3(min_x, y, z))
+		result.append(Vector3(max_x, y, z))
+	# Add the upper perimeter only, including when the map is <1 cell wide.
+	for edge: Array in [
+		[Vector2(min_x, min_z), Vector2(max_x, min_z)],
+		[Vector2(max_x, min_z), Vector2(max_x, max_z)],
+		[Vector2(max_x, max_z), Vector2(min_x, max_z)],
+		[Vector2(min_x, max_z), Vector2(min_x, min_z)]
+	]:
+		result.append(Vector3(edge[0].x, y, edge[0].y))
+		result.append(Vector3(edge[1].x, y, edge[1].y))
+	return result
+
+
+# Collision remains available for token placement. The volumetric grid hides
+# the cubes overlapping the image support and uses the flat overlay instead.
+func overlaps_image_support_cell(world_center: Vector3, grid_cell: float) -> bool:
+	var half: float = grid_cell * 0.5
+	for record: Dictionary in _records:
+		var position: Dictionary = record.position
+		var bottom: float = float(position.y)
+		var top: float = bottom + _cell_size()
+		if world_center.y + half <= bottom or world_center.y - half >= top:
+			continue
+		var center_x: float = float(position.x) + float(record.offset_x) * _cell_size()
+		var center_z: float = float(position.z) + float(record.offset_z) * _cell_size()
+		var half_width: float = float(record.width_cells) * _cell_size() * 0.5
+		var half_height: float = float(record.height_cells) * _cell_size() * 0.5
+		if (
+			world_center.x + half > center_x - half_width
+			and world_center.x - half < center_x + half_width
+			and world_center.z + half > center_z - half_height
+			and world_center.z - half < center_z + half_height
+		):
+			return true
+	return false
+
+
+func has_map_images() -> bool:
+	return not _records.is_empty()
+
+
+func _sync_grid_visibility() -> void:
+	if _images_root == null:
+		return
+	var grid: Node3D = board_root.get_node_or_null("VolumetricGrid") as Node3D
+	for plane: Node in _images_root.get_children():
+		var overlay: MeshInstance3D = plane.get_node_or_null("SurfaceGrid") as MeshInstance3D
+		if overlay != null:
+			overlay.visible = grid == null or grid.visible
+
 
 
 func remove_map_image(uid: String) -> bool:

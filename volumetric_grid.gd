@@ -655,7 +655,28 @@ func _update_multimesh_instances() -> void:
 	if _multimesh == null:
 		return
 
-	var count := _active_occupied.size()
+	# Imported map images have a dedicated, accurately clipped flat grid.
+	# Do not draw the twelve wire edges of the matching solid voxels:
+	# only the upper face should be visible in both 2D and 3D.
+	var image_controller: Node = get_parent().get_node_or_null("MapImageController")
+	var has_image_planes: bool = (
+		image_controller != null
+		and image_controller.has_method("has_map_images")
+		and bool(image_controller.call("has_map_images"))
+	)
+	var render_cells: Array[Vector3i] = []
+	for key: Variant in _active_occupied.keys():
+		var cell: Vector3i = key
+		if (
+			has_image_planes
+			and bool(image_controller.call(
+				"overlaps_image_support_cell", _cell_to_world_center(cell), cell_size
+			))
+		):
+			continue
+		render_cells.append(cell)
+
+	var count: int = render_cells.size()
 	_multimesh.instance_count = count
 	_multimesh.visible_instance_count = count
 	if count == 0:
@@ -674,8 +695,7 @@ func _update_multimesh_instances() -> void:
 		else 0.0
 	)
 	var index := 0
-	for key in _active_occupied.keys():
-		var cell: Vector3i = key
+	for cell: Vector3i in render_cells:
 		var world_transform := Transform3D(
 			Basis.IDENTITY,
 			_cell_to_world_center(cell)
