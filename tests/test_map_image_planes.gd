@@ -31,6 +31,32 @@ func run() -> void:
 	}
 	assert(MapImageController.valid_records([record]))
 	var controller: Node3D = board.get_node("MapImageController") as Node3D
+	# First opening on a short game viewport must show both native footer
+	# buttons, rather than clipping Confirm below the window.
+	var previous_size: Vector2i = root.size
+	root.size = Vector2i(860, 560)
+	await process_frame
+	var dialog_image_path := "user://map_image_first_open_test.png"
+	assert(image.save_png(dialog_image_path) == OK)
+	controller.call("_on_image_selected", ProjectSettings.globalize_path(dialog_image_path))
+	var calibration: ConfirmationDialog = controller.get("_settings") as ConfirmationDialog
+	assert(calibration.visible and calibration.get_ok_button().visible
+		and calibration.get_cancel_button().visible,
+		"First import must expose its native Confirm/Cancel buttons")
+	assert(calibration.get_node_or_null("DialogScrollBody") is ScrollContainer,
+		"Oversized calibration controls must scroll instead of clipping the footer")
+	for _frame: int in range(3):
+		await process_frame
+		var button_rect: Rect2 = calibration.get_ok_button().get_global_rect()
+		assert(button_rect.end.y <= calibration.size.y,
+			"Confirm must remain inside the calibration dialog")
+		assert(calibration.position.y + button_rect.end.y <= root.get_visible_rect().size.y,
+			"Confirm must be reachable within the game viewport")
+	calibration.hide()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(dialog_image_path))
+	root.size = previous_size
+	await process_frame
+
 	assert(controller.call("apply_map_images", [record]))
 	var planes: Node3D = controller.get_node("PlacedMapImages") as Node3D
 	assert(planes.get_child_count() == 1)
@@ -47,6 +73,45 @@ func run() -> void:
 	assert(shape.size.is_equal_approx(Vector3(8, 1, 6)),
 		"The image platform must be exactly one cube thick")
 	assert(body.position.is_equal_approx(Vector3(0.99, 0.5, -0.99)))
+	var overlay: MeshInstance3D = root_plane.get_node("SurfaceGrid") as MeshInstance3D
+	assert(overlay != null and overlay.mesh is ArrayMesh,
+		"Both 2D and 3D must render the image's top-face-only grid")
+	var line_arrays: Array = overlay.mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = line_arrays[Mesh.ARRAY_VERTEX]
+	assert(vertices.size() > 8 and vertices.size() % 2 == 0)
+	for vertex: Vector3 in vertices:
+		assert(is_equal_approx(vertex.y, 1.009),
+			"Grid lines must touch the image top, never the cube sides")
+		assert(vertex.x >= -3.01 and vertex.x <= 4.99
+			and vertex.z >= -3.99 and vertex.z <= 2.01,
+			"Grid must be clipped to the image footprint")
+	# X=7 is a global grid boundary; the image offset must not move it.
+	var aligned_line := false
+	for vertex: Vector3 in vertices:
+		if is_equal_approx(vertex.x, -3.0):
+			aligned_line = true
+	assert(aligned_line,
+		"Surface grid must follow world grid coordinates despite image offset")
+	var grid: Node3D = board.get_node("VolumetricGrid") as Node3D
+	assert(bool(controller.call(
+		"overlaps_image_support_cell", Vector3(8.5, 2.5, 10.5), 1.0
+	)))
+	assert(not bool(controller.call(
+		"overlaps_image_support_cell", Vector3(30.5, 2.5, 30.5), 1.0
+	)))
+	grid.set("_active_occupied", {
+		Vector3i(8, 2, 10): true,
+		Vector3i(30, 2, 30): true
+	})
+	grid.call("_update_multimesh_instances")
+	var instance_data: MultiMesh = grid.get("_multimesh") as MultiMesh
+	assert(instance_data.instance_count == 1,
+		"Cube wireframes on image supports must be suppressed in 3D")
+	grid.visible = false
+	assert(not overlay.visible, "Hiding the tactical grid hides the surface grid")
+	grid.visible = true
+	assert(overlay.visible, "Showing the tactical grid restores the surface grid")
+	grid.call("mark_map_dirty")
 
 	var original_snapshot: Dictionary = sync.create_snapshot()
 	assert(original_snapshot.get("map_images", []).size() == 1)
@@ -87,5 +152,5 @@ func run() -> void:
 	board.queue_free()
 	await process_frame
 	await process_frame
-	print("PASS: calibrated map image planes, offsets, collisions, undo and save")
+	print("PASS: first-open popup footer, flat 3D image grid, collisions, undo and save")
 	quit()
