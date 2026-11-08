@@ -16,6 +16,8 @@ var _records: Array[Dictionary] = []
 var _file_dialog: FileDialog
 var _settings: ConfirmationDialog
 var _error_dialog: AcceptDialog
+var _manage_dialog: AcceptDialog
+var _manage_list: ItemList
 var _preview: Control
 var _width: SpinBox
 var _height: SpinBox
@@ -52,6 +54,29 @@ func open_import_dialog() -> void:
 		_cancel_placement()
 	board_root.call("release_camera_control")
 	_file_dialog.popup_centered(Vector2i(850, 600))
+
+
+func open_manage_dialog() -> void:
+	_refresh_manage_list()
+	board_root.call("release_camera_control")
+	_manage_dialog.popup_centered(Vector2i(490, 440))
+
+
+func _refresh_manage_list() -> void:
+	_manage_list.clear()
+	for record: Dictionary in _records:
+		_manage_list.add_item("%s · %g × %g cubi" % [record.name, float(record.width_cells), float(record.height_cells)])
+
+
+func _remove_selected_plane() -> void:
+	var selected: PackedInt32Array = _manage_list.get_selected_items()
+	if selected.is_empty():
+		return
+	var index: int = selected[0]
+	if index < 0 or index >= _records.size():
+		return
+	remove_map_image(String(_records[index].id))
+	_refresh_manage_list()
 
 
 func is_placing() -> bool:
@@ -117,6 +142,22 @@ func _build_dialogs() -> void:
 	_error_dialog.title = "Importazione mappa 2D"
 	ui.add_child(_error_dialog)
 	_error_dialog.confirmed.connect(_restore_camera)
+
+	_manage_dialog = AcceptDialog.new()
+	_manage_dialog.title = "Piani immagine 2D"
+	_manage_dialog.ok_button_text = "Chiudi"
+	ui.add_child(_manage_dialog)
+	_manage_dialog.confirmed.connect(_restore_camera)
+	_manage_dialog.canceled.connect(_restore_camera)
+	var manage_column := VBoxContainer.new()
+	_manage_dialog.add_child(manage_column)
+	_manage_list = ItemList.new()
+	_manage_list.custom_minimum_size = Vector2(440, 300)
+	manage_column.add_child(_manage_list)
+	var remove_button := Button.new()
+	remove_button.text = "Rimuovi piano selezionato (annullabile con Ctrl+Z)"
+	remove_button.pressed.connect(_remove_selected_plane)
+	manage_column.add_child(remove_button)
 
 	_hint = Label.new()
 	_hint.anchor_left = 0.5
@@ -185,7 +226,7 @@ func _on_image_selected(path: String) -> void:
 		_image_format = "webp"
 		_image_bytes = image.save_webp_to_buffer(true, 0.88)
 	while _image_bytes.size() > MAX_IMAGE_BYTES and maxi(image.get_width(), image.get_height()) > 256:
-		image.resize(maxi(1, image.get_width() / 2), maxi(1, image.get_height() / 2), Image.INTERPOLATE_LANCZOS)
+		image.resize(maxi(1, int(image.get_width() * 0.5)), maxi(1, int(image.get_height() * 0.5)), Image.INTERPOLATE_LANCZOS)
 		_image_bytes = image.save_webp_to_buffer(true, 0.82)
 	if _image_bytes.is_empty() or _image_bytes.size() > MAX_IMAGE_BYTES:
 		_show_error("Immagine troppo grande per il salvataggio e la sincronizzazione.")
@@ -260,6 +301,7 @@ func _start_placement() -> void:
 	_anchor_valid = false
 	_ghost = _build_plane(_make_record(Vector3.ZERO), _texture, true)
 	add_child(_ghost)
+	_ghost.hide()
 	_hint.show()
 	board_root.call("release_camera_control")
 
@@ -430,7 +472,7 @@ func _build_plane(record: Dictionary, texture: Texture2D, ghost: bool) -> Node3D
 	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_color.a = 0.68 if ghost else 1.0
+	material.albedo_color = Color(1.0, 1.0, 1.0, 0.68 if ghost else 1.0)
 	image_plane.material = material
 	var surface := MeshInstance3D.new()
 	surface.name = "ImageSurface"
