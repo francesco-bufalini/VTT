@@ -603,9 +603,12 @@ func _refresh() -> void:
 		revive_button.visible = _power_mode == "revive_choose" and key in game.available_revivals(_selected)
 	_power_summary.text = "Seleziona un pezzo per vedere i poteri rimasti."
 	if active_code != ".":
+		var spent: Array[String] = []
+		for used_power in game._data(uid).get("used", []):
+			spent.append(String(used_power))
 		_power_summary.text = "Pezzo: %s %s · %s" % [
 			"Bianco" if side == "w" else "Nero", kind,
-			"potere disponibile" if not game._data(uid).get("used", []).size() else "poteri già usati: " + ", ".join(game._data(uid).get("used", []))
+			"potere disponibile" if spent.is_empty() else "poteri già usati: " + ", ".join(spent)
 		]
 	if _power_mode != "":
 		_power_summary.text += "\nPotere selezionato: %s" % _power_mode
