@@ -1,8 +1,9 @@
 extends Node3D
 ## Self-contained 3D chess table; moves are validated by chess_rules.gd.
-## The pieces are generic 3D tokens, not tactical VTT creatures.
+## Piece models use lightweight geometry derived from the supplied Lewis chess set.
 
 const ChessRules = preload("res://vtt/chess/chess_rules.gd")
+const LewisMesh = preload("res://vtt/chess/lewis_mesh.gd")
 const SCENARIO_LIST := "res://vtt/menu/campaign_scenarios.tscn"
 const NO_SQUARE := Vector2i(-1, -1)
 const TILE_SIDE := 1.0
@@ -11,6 +12,7 @@ var game = ChessRules.new()
 var _tiles: Array[MeshInstance3D] = []
 var _piece_root: Node3D
 var _piece_nodes: Dictionary = {}
+var _lewis_meshes: Dictionary = {}
 var _transform_option_buttons: Dictionary = {}
 var _selected := NO_SQUARE
 var _destinations: Array[Dictionary] = []
@@ -149,23 +151,20 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	var pale := side == "w"
 	var main_color := Color(0.94, 0.91, 0.80) if pale else Color(0.18, 0.16, 0.26)
 	var edge_color := Color(0.68, 0.48, 0.17) if pale else Color(0.45, 0.34, 0.66)
-	var body := _material(main_color, 0.15)
-	var trim := _material(edge_color, 0.45)
+	var body := _material(main_color, 0.08)
+	body.roughness = 0.71 # Slightly weathered ivory / obsidian
+	var trim := _material(edge_color, 0.34)
 	var footing := CylinderMesh.new()
 	footing.top_radius = 0.36
 	footing.bottom_radius = 0.40
-	footing.height = 0.18
-	_mesh(token, footing, trim, Vector3(0, 0.04, 0))
-	var crown := CylinderMesh.new()
-	crown.top_radius = 0.26 if kind == "P" else 0.31
-	crown.bottom_radius = 0.31
-	crown.height = 0.31 if kind == "P" else 0.48
-	var height := crown.height
-	_mesh(token, crown, body, Vector3(0, 0.13 + height / 2.0, 0))
-	var cap := SphereMesh.new()
-	cap.radius = 0.13 if kind == "P" else 0.19
-	cap.height = cap.radius * 2.0
-	_mesh(token, cap, trim, Vector3(0, 0.13 + height + 0.08, 0))
+	footing.height = 0.12
+	_mesh(token, footing, trim, Vector3(0, 0.025, 0))
+	if not _lewis_meshes.has(kind):
+		_lewis_meshes[kind] = LewisMesh.create_mesh(kind)
+	var sculpture: MeshInstance3D = _mesh(token, _lewis_meshes[kind], body, Vector3(0, 0.095, 0))
+	sculpture.name = "LewisSculpture"
+	sculpture.set_meta("lewis_kind", kind)
+	sculpture.set_meta("lewis_side", side)
 	var symbol := Label3D.new()
 	symbol.text = kind + (" ★" if game.is_royal(cell) and kind == "Q" else "") + (" ✖" if game.is_cursed(cell) else "")
 	symbol.font_size = 90
@@ -174,7 +173,7 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	symbol.outline_modulate = Color(0.06, 0.05, 0.09)
 	symbol.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	symbol.no_depth_test = true
-	symbol.position = Vector3(0, 0.74, 0)
+	symbol.position = Vector3(0, 0.94, 0)
 	token.add_child(symbol)
 
 

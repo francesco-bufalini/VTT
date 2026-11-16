@@ -2,6 +2,7 @@ extends SceneTree
 
 const ChessRules = preload("res://vtt/chess/chess_rules.gd")
 const ChessScene = preload("res://vtt/chess/wizard_chess.tscn")
+const LewisMesh = preload("res://vtt/chess/lewis_mesh.gd")
 
 
 func _initialize() -> void:
@@ -364,7 +365,34 @@ func run() -> void:
 	await process_frame
 	assert(scene.get_node("ChessTable") != null)
 	assert(scene.get_node("ChessTokens").get_child_count() == 32,
-		"The scenario must spawn all 32 generic chess piece tokens")
+		"The scenario must spawn all 32 Lewis chess piece tokens")
+	# All six distinct chess roles retain geometry from the supplied Lewis set.
+	var meshes: Dictionary = {}
+	for kind in ["P", "R", "N", "B", "Q", "K"]:
+		var model: ArrayMesh = LewisMesh.create_mesh(kind)
+		assert(model.get_surface_count() == 1, "Missing sculpted Lewis model: " + kind)
+		var vertices: PackedVector3Array = model.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		assert(vertices.size() >= 250, "Lewis model needs actual triangle geometry: " + kind)
+		assert(model.get_aabb().size.y > 0.20)
+		meshes[kind] = model
+	var found: Dictionary = {}
+	var white_color := Color.BLACK
+	var black_color := Color.BLACK
+	var root_tokens: Node3D = scene.get_node("ChessTokens")
+	for token in root_tokens.get_children():
+		var code: String = token.get_meta("chess_piece")
+		var sculpt: MeshInstance3D = token.get_node("LewisSculpture")
+		assert(sculpt.get_meta("lewis_kind") == code.substr(1, 1))
+		assert(sculpt.mesh.get_surface_count() == 1)
+		found[code.substr(1, 1)] = true
+		var mat := sculpt.material_override as StandardMaterial3D
+		if code.begins_with("w"):
+			white_color = mat.albedo_color
+		else:
+			black_color = mat.albedo_color
+	assert(found.size() == 6, "The scene must use all six Lewis model types")
+	assert(white_color != black_color and white_color.get_luminance() > black_color.get_luminance(),
+		"The two teams must be visually distinguishable by mesh materials")
 	# The visible interface exposes captured pieces and transforms the selected token.
 	var visual_game = scene.get("game")
 	assert(visual_game.restore_state(rights_state))
@@ -449,5 +477,5 @@ func run() -> void:
 	assert(visual_game.is_royal(Vector2i(3, 7)) and is_instance_valid(power_buttons["coup"]))
 	scene.queue_free()
 	await process_frame
-	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, temporary transformation, UI safety")
+	print("PASS: wizard chess Lewis meshes, distinctive white/black finishes, board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, temporary transformation, UI safety")
 	quit()
