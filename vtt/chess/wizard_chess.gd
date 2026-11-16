@@ -7,7 +7,7 @@ const SCENARIO_LIST := "res://vtt/menu/campaign_scenarios.tscn"
 const NO_SQUARE := Vector2i(-1, -1)
 const TILE_SIDE := 1.0
 
-var game: RefCounted = ChessRules.new()
+var game = ChessRules.new()
 var _tiles: Array[MeshInstance3D] = []
 var _piece_root: Node3D
 var _selected := NO_SQUARE
