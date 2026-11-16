@@ -394,59 +394,246 @@ func _revert_transformation(side: String) -> void:
 	active_transforms.erase(side)
 
 
-func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
-	if finished or promotion not in ["Q", "R", "B", "N"]:
-		return false
-	var chosen: Dictionary = {}
-	for candidate in legal_moves(from):
-		if candidate["to"] == to:
-			chosen = candidate
-			break
-	if chosen.is_empty():
-		return false
-	history.append(_state_without_history())
+## Powers that replace an ordinary move: Pawn's rush and Knight's sweep.
+func power_moves(from: Vector2i) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if finished or not inside(from) or not piece(from).begins_with(turn):
+		return result
+	var uid := piece_id(from)
+	var kind := piece(from).substr(1, 1)
+	if kind == "P" and not _used(uid, "dash"):
+		var forward := -1 if turn == "w" else 1
+		for steps in range(1, 4):
+			var to := from + Vector2i(0, forward * steps)
+			if not inside(to) or piece(to) != "." or _wall_blocks(walls, turn, from, to):
+				break
+			var entry: Dictionary = {"to": to, "power": "dash"}
+			if to.y == (0 if turn == "w" else 7):
+				entry["promotion"] = true
+			result.append(entry)
+		for dx in [-1, 1]:
+			var diag := from + Vector2i(dx, forward)
+			if inside(diag) and not piece(diag).begins_with(turn) and not is_royal(diag) and not _wall_blocks(walls, turn, from, diag):
+				var entry: Dictionary = {"to": diag, "power": "dash"}
+				if diag.y == (0 if turn == "w" else 7):
+					entry["promotion"] = true
+				result.append(entry)
+	elif kind == "N" and not _used(uid, "sweep"):
+		for offset in KNIGHT_JUMPS:
+			var to := from + offset
+			if not inside(to):
+				continue
+			# Follow the long leg first, then the short leg (three squares total).
+			var long_step := Vector2i(signi(offset.x), 0) if absi(offset.x) == 2 else Vector2i(0, signi(offset.y))
+			var short_step := Vector2i(0, signi(offset.y)) if absi(offset.x) == 2 else Vector2i(signi(offset.x), 0)
+			var p1 := from + long_step
+			var p2 := p1 + long_step
+			var route: Array[Vector2i] = [p1, p2, p2 + short_step]
+			var valid := true
+			var previous := from
+			for at in route:
+				if not inside(at) or piece(at).begins_with(turn) or is_royal(at) or _wall_blocks(walls, turn, previous, at):
+					valid = false
+					break
+				previous = at
+			if valid:
+				result.append({"to": to, "power": "sweep", "sweep": [p1, p2]})
+	var safe: Array[Dictionary] = []
+	for move in result:
+		var hypothetical: Array[String] = board.duplicate()
+		_apply_to(hypothetical, from, move)
+		var king := move["to"] if uid == int(royal_ids[turn]) else king_square(turn)
+		if king != NO_SQUARE and not _is_attacked(hypothetical, king, opposite(turn), walls):
+			safe.append(move)
+	return safe
+
+
+func _capture_at(at: Vector2i, victim_side: String) -> void:
+	if piece(at) == ".":
+		return
+	var uid := piece_id(at)
+	if uid == int(royal_ids[victim_side]):
+		return
+	var kind := piece(at).substr(1, 1)
+	if active_transforms.has(victim_side):
+		var record: Dictionary = active_transforms[victim_side]
+		if _transform_square(record) == at:
+			kind = String(record["original"])
+			active_transforms.erase(victim_side)
+	captured_pieces[victim_side].append(kind)
+	captured_ids[victim_side].append(uid)
+	_revoke_corner(at)
+	piece_ids[at.y * 8 + at.x] = 0
+
+
+func _commit_move(from: Vector2i, chosen: Dictionary, promotion: String) -> bool:
+	var to: Vector2i = chosen["to"]
 	var moving := piece(from)
 	var moving_side := turn
-	var captured_at := Vector2i(to.x, from.y) if bool(chosen.get("en_passant", false)) else to
-	var captured := piece(captured_at)
-	var captured_kind := captured.substr(1, 1)
+	var uid := piece_id(from)
+	history.append(_state_without_history())
 	var victim_side := opposite(moving_side)
-	if active_transforms.has(victim_side):
-		var victim_record: Dictionary = active_transforms[victim_side]
-		if _transform_square(victim_record) == captured_at:
-			# A captured disguised piece counts as its original kind.
-			captured_kind = String(victim_record["original"])
-			active_transforms.erase(victim_side)
+	var victims: Array[Vector2i] = []
+	if bool(chosen.get("en_passant", false)):
+		victims.append(Vector2i(to.x, from.y))
+	elif piece(to) != ".":
+		victims.append(to)
+	for at in chosen.get("sweep", []):
+		if piece(at) != "." and at not in victims:
+			victims.append(at)
+	for at in victims:
+		_capture_at(at, victim_side)
 	_apply_to(board, from, chosen, promotion)
-	if captured != ".":
-		captured_pieces[victim_side].append(captured_kind)
+	piece_ids[from.y * 8 + from.x] = 0
+	piece_ids[to.y * 8 + to.x] = uid
+	if chosen.has("castle"):
+		var rook_from := Vector2i(7, from.y) if chosen["castle"] == "K" else Vector2i(0, from.y)
+		var rook_to := Vector2i(5, from.y) if chosen["castle"] == "K" else Vector2i(3, from.y)
+		piece_ids[rook_to.y * 8 + rook_to.x] = piece_id(rook_from)
+		piece_ids[rook_from.y * 8 + rook_from.x] = 0
 	if active_transforms.has(moving_side):
-		var own_record: Dictionary = active_transforms[moving_side]
-		if _transform_square(own_record) == from:
-			own_record["square"] = [to.x, to.y]
-			active_transforms[moving_side] = own_record
-	if moving.ends_with("K"):
+		var record: Dictionary = active_transforms[moving_side]
+		if _transform_square(record) == from:
+			record["square"] = [to.x, to.y]
+			active_transforms[moving_side] = record
+	if moving.ends_with("K") and uid == int(royal_ids[moving_side]):
 		castling[moving_side + "K"] = false
 		castling[moving_side + "Q"] = false
 	if moving.ends_with("R"):
 		_revoke_corner(from)
-	if captured.ends_with("R"):
-		_revoke_corner(to)
+	if bool(chosen.get("promotion", false)):
+		var info: Dictionary = _data(uid)
+		info["promoted"] = promotion
+		piece_data[str(uid)] = info
+	if chosen.has("power"):
+		_spend(uid, String(chosen["power"]))
 	en_passant = NO_SQUARE
-	if moving.ends_with("P") and absi(to.y - from.y) == 2:
+	if moving.ends_with("P") and absi(to.y - from.y) == 2 and not chosen.has("power"):
 		en_passant = Vector2i(from.x, (from.y + to.y) / 2)
-	halfmove_clock = 0 if moving.ends_with("P") or captured != "." or bool(chosen.get("en_passant", false)) else halfmove_clock + 1
+	halfmove_clock = 0 if moving.ends_with("P") or not victims.is_empty() else halfmove_clock + 1
 	if moving_side == "b":
 		fullmove_number += 1
 	turn = opposite(turn)
 	transformed_this_turn = false
-	# Once the opponent has played, restore this player's transformed piece
-	# BEFORE evaluating check, legal moves, and possible game over.
 	_revert_transformation(turn)
 	_record_position()
 	_evaluate()
 	return true
 
+
+func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
+	if finished or promotion not in ["Q", "R", "B", "N"]:
+		return false
+	for candidate in legal_moves(from):
+		if candidate["to"] == to:
+			return _commit_move(from, candidate, promotion)
+	return false
+
+
+func play_power(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
+	if finished or promotion not in ["Q", "R", "B", "N"]:
+		return false
+	for candidate in power_moves(from):
+		if candidate["to"] == to:
+			return _commit_move(from, candidate, promotion)
+	return false
+
+
+## Free powers may be activated before the ordinary move on the owner's turn.
+func activate_wall(from: Vector2i, axis: String) -> bool:
+	if finished or axis not in ["rank", "file"] or not inside(from) or piece(from) != turn + "R":
+		return false
+	var uid := piece_id(from)
+	if _used(uid, "wall"):
+		return false
+	history.append(_state_without_history())
+	_spend(uid, "wall")
+	walls.append({"owner": turn, "axis": axis, "index": from.y if axis == "rank" else from.x})
+	_record_position()
+	_evaluate()
+	return true
+
+
+func can_revive(from: Vector2i) -> bool:
+	return not finished and inside(from) and piece(from) == turn + "B" and (from.x + from.y) % 2 == 0 and not _used(piece_id(from), "revive")
+
+
+func available_revivals(from: Vector2i) -> Array[String]:
+	var result: Array[String] = []
+	if not can_revive(from):
+		return result
+	for i in range(captured_pieces[turn].size()):
+		var kind: String = captured_pieces[turn][i]
+		if kind not in result and not bool(_data(captured_ids[turn][i]).get("cursed", false)):
+			result.append(kind)
+	return result
+
+
+func revive(from: Vector2i, to: Vector2i, kind: String) -> bool:
+	if kind not in available_revivals(from) or not inside(to) or piece(to) != "." or maxi(absi(to.x - from.x), absi(to.y - from.y)) != 1:
+		return false
+	if _wall_blocks(walls, turn, from, to):
+		return false
+	var reserve_index := -1
+	for i in range(captured_pieces[turn].size()):
+		if captured_pieces[turn][i] == kind and not bool(_data(captured_ids[turn][i]).get("cursed", false)):
+			reserve_index = i
+			break
+	if reserve_index == -1:
+		return false
+	var trial: Array[String] = board.duplicate()
+	_put(trial, to, turn + kind)
+	if _is_attacked(trial, king_square(turn), opposite(turn), walls):
+		return false
+	history.append(_state_without_history())
+	var uid: int = captured_ids[turn][reserve_index]
+	captured_ids[turn].remove_at(reserve_index)
+	captured_pieces[turn].remove_at(reserve_index)
+	_put(board, to, turn + kind)
+	piece_ids[to.y * 8 + to.x] = uid
+	_spend(piece_id(from), "revive")
+	halfmove_clock = 0
+	_record_position()
+	_evaluate()
+	return true
+
+
+func can_curse(from: Vector2i) -> bool:
+	return not finished and inside(from) and piece(from) == turn + "B" and (from.x + from.y) % 2 == 1 and not _used(piece_id(from), "curse")
+
+
+func curse(from: Vector2i, target: Vector2i) -> bool:
+	if not can_curse(from) or not inside(target) or not piece(target).begins_with(opposite(turn)) or is_royal(target):
+		return false
+	history.append(_state_without_history())
+	var uid := piece_id(target)
+	var info: Dictionary = _data(uid)
+	info["cursed"] = true
+	piece_data[str(uid)] = info
+	_spend(piece_id(from), "curse")
+	_record_position()
+	_evaluate()
+	return true
+
+
+## The queen takes the crown without spending the ordinary move, even if
+## activated while the opponent is to move. Only one coup per color.
+func queen_coup(at: Vector2i) -> bool:
+	if finished or not inside(at) or not piece(at).ends_with("Q"):
+		return false
+	var side := piece(at).substr(0, 1)
+	if bool(coup_used[side]) or piece_id(at) == int(royal_ids[side]):
+		return false
+	if active_transforms.has(side) and _transform_square(active_transforms[side]) == at:
+		return false
+	history.append(_state_without_history())
+	royal_ids[side] = piece_id(at)
+	coup_used[side] = true
+	castling[side + "K"] = false
+	castling[side + "Q"] = false
+	_record_position()
+	_evaluate()
+	return true
 
 func _position_key() -> String:
 	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_ids) + ":" + JSON.stringify(royal_ids) + ":" + JSON.stringify(walls) + ":" + JSON.stringify(piece_data) + ":" + str(transformed_this_turn) + ":" + JSON.stringify(active_transforms)
