@@ -397,7 +397,12 @@ func undo() -> bool:
 	if history.is_empty():
 		return false
 	var previous: Dictionary = history.pop_back()
-	return restore_state(previous)
+	var remaining: Array[Dictionary] = history.duplicate(true)
+	if not restore_state(previous):
+		history = remaining
+		return false
+	history = remaining
+	return true
 
 
 ## Deterministic setup for tests and authored puzzle positions.
