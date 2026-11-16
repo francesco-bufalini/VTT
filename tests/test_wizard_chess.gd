@@ -385,7 +385,7 @@ func run() -> void:
 		assert(sculpt.get_meta("lewis_kind") == code.substr(1, 1))
 		assert(sculpt.mesh.get_surface_count() == 1)
 		found[code.substr(1, 1)] = true
-		var mat: StandardMaterial3D = sculpt.material_override
+		var mat := sculpt.material_override as StandardMaterial3D
 		if code.begins_with("w"):
 			white_color = mat.albedo_color
 		else:
