@@ -603,7 +603,7 @@ func can_curse(from: Vector2i) -> bool:
 
 
 func curse(from: Vector2i, target: Vector2i) -> bool:
-	if not can_curse(from) or not inside(target) or not piece(target).begins_with(opposite(turn)) or is_royal(target):
+	if not can_curse(from) or not inside(target) or not piece(target).begins_with(opposite(turn)) or is_royal(target) or is_cursed(target):
 		return false
 	history.append(_state_without_history())
 	var uid := piece_id(target)
@@ -693,12 +693,63 @@ func _has_transform_escape() -> bool:
 	return false
 
 
+## Some free spells (rook wall, light bishop's revival, queen coup) can
+## create a legal move even when the current position has none.
+func _has_magic_escape() -> bool:
+	for i in range(board.size()):
+		var code := board[i]
+		if not code.begins_with(turn):
+			continue
+		var at := Vector2i(i % 8, i / 8)
+		var uid := piece_ids[i]
+		if code.ends_with("R") and not _used(uid, "wall"):
+			for axis in ["rank", "file"]:
+				walls.append({"owner": turn, "axis": axis, "index": at.y if axis == "rank" else at.x})
+				var saves_king := _has_legal_move()
+				walls.pop_back()
+				if saves_king:
+					return true
+		if code.ends_with("B") and (at.x + at.y) % 2 == 0 and not _used(uid, "revive"):
+			for reserve_index in range(captured_pieces[turn].size()):
+				var reserve_uid: int = captured_ids[turn][reserve_index]
+				if bool(_data(reserve_uid).get("cursed", false)):
+					continue
+				for delta in DIAGONALS + STRAIGHTS:
+					var spot: Vector2i = at + delta
+					if not inside(spot) or piece(spot) != "." or _wall_blocks(walls, turn, at, spot):
+						continue
+					_put(board, spot, turn + String(captured_pieces[turn][reserve_index]))
+					piece_ids[spot.y * 8 + spot.x] = reserve_uid
+					var saves_king := not in_check(turn) and _has_legal_move()
+					_put(board, spot, ".")
+					piece_ids[spot.y * 8 + spot.x] = 0
+					if saves_king:
+						return true
+		if code.ends_with("Q") and not bool(coup_used[turn]) and not is_royal(at):
+			if active_transforms.has(turn) and _transform_square(active_transforms[turn]) == at:
+				continue
+			var old_royal: int = royal_ids[turn]
+			var old_rights: Dictionary = castling.duplicate()
+			royal_ids[turn] = uid
+			coup_used[turn] = true
+			castling[turn + "K"] = false
+			castling[turn + "Q"] = false
+			var saves_king := _has_legal_move()
+			royal_ids[turn] = old_royal
+			coup_used[turn] = false
+			castling = old_rights
+			if saves_king:
+				return true
+	return false
+
+
 func _evaluate() -> void:
 	finished = false
 	var check := in_check(turn)
 	var side_name := "bianchi" if turn == "w" else "neri"
 	var has_move := _has_legal_move()
-	if not has_move and not _has_transform_escape():
+	var has_escape := not has_move and (_has_transform_escape() or _has_magic_escape())
+	if not has_move and not has_escape:
 		finished = true
 		if check:
 			status = "SCACCO MATTO! Vincono i neri." if turn == "w" else "SCACCO MATTO! Vincono i bianchi."
@@ -714,7 +765,7 @@ func _evaluate() -> void:
 		finished = true
 		status = "PATTA: materiale insufficiente."
 	elif not has_move:
-		status = "Nessuna mossa disponibile: i %s devono trasformare un pezzo." % side_name
+		status = "Nessuna mossa normale: i %s devono usare un potere magico." % side_name
 	elif check:
 		status = "SCACCO al re dei %s! Tocca ai %s." % [side_name, side_name]
 	else:
