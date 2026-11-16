@@ -705,9 +705,9 @@ func _has_magic_escape() -> bool:
 		if code.ends_with("R") and not _used(uid, "wall"):
 			for axis in ["rank", "file"]:
 				walls.append({"owner": turn, "axis": axis, "index": at.y if axis == "rank" else at.x})
-				var saves_king := _has_legal_move()
+				var saves_wall := _has_legal_move()
 				walls.pop_back()
-				if saves_king:
+				if saves_wall:
 					return true
 		if code.ends_with("B") and (at.x + at.y) % 2 == 0 and not _used(uid, "revive"):
 			for reserve_index in range(captured_pieces[turn].size()):
@@ -720,10 +720,10 @@ func _has_magic_escape() -> bool:
 						continue
 					_put(board, spot, turn + String(captured_pieces[turn][reserve_index]))
 					piece_ids[spot.y * 8 + spot.x] = reserve_uid
-					var saves_king := not in_check(turn) and _has_legal_move()
+					var saves_revival := not in_check(turn) and _has_legal_move()
 					_put(board, spot, ".")
 					piece_ids[spot.y * 8 + spot.x] = 0
-					if saves_king:
+					if saves_revival:
 						return true
 		if code.ends_with("Q") and not bool(coup_used[turn]) and not is_royal(at):
 			if active_transforms.has(turn) and _transform_square(active_transforms[turn]) == at:
@@ -734,11 +734,11 @@ func _has_magic_escape() -> bool:
 			coup_used[turn] = true
 			castling[turn + "K"] = false
 			castling[turn + "Q"] = false
-			var saves_king := _has_legal_move()
+			var saves_coup := _has_legal_move()
 			royal_ids[turn] = old_royal
 			coup_used[turn] = false
 			castling = old_rights
-			if saves_king:
+			if saves_coup:
 				return true
 	return false
 
