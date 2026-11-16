@@ -215,6 +215,7 @@ func run() -> void:
 	assert(chess.play(Vector2i(6, 6), Vector2i(6, 4))) # g4
 	var mate_state: Dictionary = chess.export_state()
 	mate_state["captured_pieces"]["w"] = ["N"]
+	mate_state.erase("piece_ids") # Re-seed identities for this authored reserve
 	assert(chess.restore_state(mate_state))
 	assert(chess.play(Vector2i(3, 0), Vector2i(7, 4))) # ...Qh4+
 	assert(not chess.finished, "A possible recovery prevents premature checkmate")
