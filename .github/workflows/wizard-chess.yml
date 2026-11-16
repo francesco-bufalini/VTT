@@ -1,0 +1,67 @@
+name: Scacchi dei Maghi (Godot)
+
+on:
+  pull_request:
+    paths:
+      - "vtt/chess/**"
+      - "vtt/campaign_manager.gd"
+      - "tests/test_wizard_chess.gd"
+      - ".github/workflows/wizard-chess.yml"
+  push:
+    branches: [main]
+    paths:
+      - "vtt/chess/**"
+      - "vtt/campaign_manager.gd"
+      - "tests/test_wizard_chess.gd"
+      - ".github/workflows/wizard-chess.yml"
+  workflow_dispatch:
+
+jobs:
+  wizard-chess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /project.godot
+            /*.gd
+            /*.tscn
+            /vtt/
+            /network/
+            /interaction/
+            /encounter/*.gd
+            /items/
+            /homebrew/
+            /pwa/
+            /assets/creature_info/
+            /assets/spell_area_geometry.json
+            /assets/tokens/test/
+            /tests/
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.7.2-stable_linux.x86_64
+      - name: Import and parse project
+        shell: bash
+        run: |
+          /tmp/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --editor --import --quit
+      - name: Play chess rules and scenario regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
+          timeout 45s "$GODOT" --headless --path . --script res://tests/test_wizard_chess.gd > /tmp/chess.log 2>&1 || {
+            cat /tmp/chess.log
+            exit 1
+          }
+          cat /tmp/chess.log
+          grep -q 'PASS: wizard chess' /tmp/chess.log
+          if grep -Eq '^SCRIPT ERROR:|^ERROR:' /tmp/chess.log; then
+            exit 1
+          fi
