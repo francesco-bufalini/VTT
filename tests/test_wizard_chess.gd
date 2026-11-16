@@ -47,15 +47,18 @@ func run() -> void:
 	assert(chess.undo(), "Undo must keep the full history, not just the last move")
 	assert(chess.turn == "w" and chess.piece(Vector2i(4, 6)) == "wP")
 
-	# Fool's mate: the next move must be disallowed because the game is over.
+	# Wizard pawn dash can prevent the traditional Fool's Mate.
 	chess.reset()
 	assert(chess.play(Vector2i(5, 6), Vector2i(5, 5))) # f3
 	assert(chess.play(Vector2i(4, 1), Vector2i(4, 3))) # ...e5
 	assert(chess.play(Vector2i(6, 6), Vector2i(6, 4))) # g4
 	assert(chess.play(Vector2i(3, 0), Vector2i(7, 4))) # ...Qh4#
-	assert(chess.finished and "SCACCO MATTO" in chess.status)
-	assert(not chess.play(Vector2i(4, 6), Vector2i(4, 5)))
-	assert(chess.undo() and not chess.finished)
+	assert(not chess.finished and chess.in_check("w"))
+	assert(_has(chess.power_moves(Vector2i(7, 6)), Vector2i(6, 5)), "The h-pawn can shield its king diagonally")
+	assert(chess.play_power(Vector2i(7, 6), Vector2i(6, 5)))
+	assert(not chess.in_check("w"), "Pawn dash ends the queen's check")
+	assert(chess.undo() and chess.in_check("w"))
+	assert(chess.undo() and not chess.in_check("w"))
 
 	# Both castling types and castling-right revocation.
 	var cells := _empty()
@@ -228,6 +231,111 @@ func run() -> void:
 	}
 	assert(chess.restore_state(kings_state))
 	assert(not chess.finished, "Restorable material may still enable a future mate")
+
+	# P: three-square dash is per physical pawn and can be undone.
+	chess.reset()
+	assert(_has(chess.power_moves(Vector2i(0, 6)), Vector2i(0, 3)))
+	assert(chess.play_power(Vector2i(0, 6), Vector2i(0, 3)))
+	assert(chess.piece(Vector2i(0, 3)) == "wP")
+	var pawn_uid := chess.piece_id(Vector2i(0, 3))
+	assert(chess._used(pawn_uid, "dash"))
+	assert(chess.play(Vector2i(4, 1), Vector2i(4, 3)))
+	assert(chess.power_moves(Vector2i(0, 3)).is_empty(), "A pawn gets one dash per game")
+	assert(chess.undo() and chess.undo())
+	assert(not chess._used(chess.piece_id(Vector2i(0, 6)), "dash"))
+	assert(chess.play_power(Vector2i(0, 6), Vector2i(0, 3)))
+
+	# R: a horizontal magic wall prevents enemy traversal and attacks.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 0, 4, "wR") # a4
+	_index(cells, 7, 1, "bR") # h7
+	assert(chess.set_position(cells, "w"))
+	assert(chess.activate_wall(Vector2i(0, 4), "rank"))
+	assert(chess.walls.size() == 1 and chess.wall_at(Vector2i(3, 4)) == ["w"])
+	assert(not chess.activate_wall(Vector2i(0, 4), "file"))
+	assert(chess.play(Vector2i(4, 7), Vector2i(3, 7)))
+	assert(not _has(chess.legal_moves(Vector2i(7, 1)), Vector2i(7, 4)))
+	assert(not _has(chess.legal_moves(Vector2i(7, 1)), Vector2i(7, 6)))
+	assert(_has(chess.legal_moves(Vector2i(7, 1)), Vector2i(7, 3)))
+	assert(chess.undo() and chess.walls.size() == 1)
+	assert(chess.undo() and chess.walls.is_empty(), "Wall disappears when action undone")
+
+	# B (light square): resurrect a captured allied token on an adjacent tile.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 5, 7, "wB") # f1: light square
+	var revival_state: Dictionary = {
+		"board": cells.duplicate(), "turn": "w", "castling": {},
+		"en_passant": [-1, -1], "captured_pieces": {"w": ["N"], "b": []}
+	}
+	assert(chess.restore_state(revival_state))
+	assert(chess.can_revive(Vector2i(5, 7)))
+	assert(chess.revive(Vector2i(5, 7), Vector2i(4, 6), "N"))
+	assert(chess.piece(Vector2i(4, 6)) == "wN" and chess.turn == "w")
+	assert(chess.captured_pieces["w"].is_empty())
+	assert(not chess.can_revive(Vector2i(5, 7)))
+	assert(chess.undo() and chess.piece(Vector2i(4, 6)) == ".")
+	assert(chess.captured_pieces["w"] == ["N"])
+
+	# B (dark square): curse an enemy token so it can neither transform nor revive.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 2, 7, "wB") # c1: dark square
+	_index(cells, 0, 3, "wR") # a5
+	_index(cells, 0, 1, "bP") # a7
+	assert(chess.set_position(cells, "w"))
+	assert(chess.can_curse(Vector2i(2, 7)))
+	assert(chess.curse(Vector2i(2, 7), Vector2i(0, 1)))
+	assert(chess.is_cursed(Vector2i(0, 1)) and not chess.can_curse(Vector2i(2, 7)))
+	assert(chess.play(Vector2i(0, 3), Vector2i(0, 1))) # Rxa7
+	assert(chess.captured_pieces["b"] == ["P"] and chess.available_transformations().is_empty())
+	assert(chess.undo() and chess.is_cursed(Vector2i(0, 1)))
+	assert(chess.undo() and not chess.is_cursed(Vector2i(0, 1)))
+
+	# N: sweep every enemy on the long-then-short L-shaped path.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 1, 7, "wN") # b1
+	_index(cells, 1, 6, "bP") # b2
+	_index(cells, 1, 5, "bP") # b3
+	_index(cells, 2, 5, "bP") # c3
+	assert(chess.set_position(cells, "w"))
+	assert(_has(chess.power_moves(Vector2i(1, 7)), Vector2i(2, 5)))
+	assert(chess.play_power(Vector2i(1, 7), Vector2i(2, 5)))
+	assert(chess.captured_pieces["b"].size() == 3, "Sweep captures all three enemy pawns")
+	assert(chess.piece(Vector2i(1, 6)) == "." and chess.piece(Vector2i(1, 5)) == ".")
+	assert(chess.piece(Vector2i(2, 5)) == "wN")
+	var knight_uid := chess.piece_id(Vector2i(2, 5))
+	assert(chess._used(knight_uid, "sweep"))
+	assert(chess.undo() and not chess._used(chess.piece_id(Vector2i(1, 7)), "sweep"))
+
+	# Q: coup can be declared on the opponent's turn, transferring the royal role.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 3, 7, "wQ")
+	_index(cells, 7, 0, "bK")
+	_index(cells, 4, 5, "bR") # e3, attacking the former white king
+	assert(chess.set_position(cells, "b"))
+	assert(chess.queen_coup(Vector2i(3, 7)))
+	assert(chess.turn == "b" and chess.is_royal(Vector2i(3, 7)))
+	assert(not chess.is_royal(Vector2i(4, 7)) and chess.coup_used["w"])
+	assert(not chess.queen_coup(Vector2i(3, 7)), "Only one coup per color")
+	assert(chess.play(Vector2i(4, 5), Vector2i(4, 7)),
+		"The former king is now an ordinary capturable piece")
+	assert(chess.captured_pieces["w"] == ["K"] and not chess.finished)
+	assert(chess.king_square("w") == Vector2i(3, 7))
+	var coup_snapshot: Dictionary = chess.export_state()
+	var coup_reload = ChessRules.new()
+	assert(coup_reload.restore_state(coup_snapshot))
+	assert(coup_reload.king_square("w") == Vector2i(3, 7) and coup_reload.coup_used["w"])
+	assert(coup_reload.undo() and coup_reload.piece(Vector2i(4, 7)) == "wK")
+	assert(coup_reload.undo() and coup_reload.is_royal(Vector2i(4, 7)))
+	assert(not coup_reload.coup_used["w"], "Undo restores the original king")
 
 	# Persistence is per scenario, independent from VTT map snapshots.
 	chess.reset()
