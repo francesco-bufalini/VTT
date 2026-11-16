@@ -585,8 +585,8 @@ func _refresh() -> void:
 	var at := _selected
 	var active_code: String = game.piece(at) if at != NO_SQUARE else "."
 	var side: String = active_code.substr(0, 1) if active_code != "." else ""
-	var belongs := side == game.turn
-	var uid := game.piece_id(at)
+	var belongs: bool = side == game.turn
+	var uid: int = game.piece_id(at)
 	var kind: String = active_code.substr(1, 1) if active_code != "." else ""
 	_power_buttons["dash"].visible = belongs and kind == "P" and not game._used(uid, "dash") and not game.power_moves(at).is_empty()
 	_power_buttons["sweep"].visible = belongs and kind == "N" and not game._used(uid, "sweep") and not game.power_moves(at).is_empty()
