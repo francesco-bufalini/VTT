@@ -10,7 +10,7 @@ static func create_mesh(kind: String) -> ArrayMesh:
 	if not Data.PIECES.has(kind):
 		return mesh
 	var packed: PackedByteArray = Marshalls.base64_to_raw(Data.PIECES[kind])
-	var raw: PackedByteArray = packed.decompress(int(Data.LENGTHS[kind]), FileAccess.COMPRESSION_ZLIB)
+	var raw: PackedByteArray = packed.decompress(int(Data.LENGTHS[kind]), FileAccess.COMPRESSION_DEFLATE)
 	if raw.size() != int(Data.LENGTHS[kind]) or raw.size() % 9 != 0:
 		push_warning("Lewis chess model invalid for " + kind)
 		return mesh
