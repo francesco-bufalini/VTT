@@ -613,10 +613,10 @@ func _refresh() -> void:
 		_reserve_description("w"), _reserve_description("b")
 	]
 	var available := game.available_transformations()
-	for kind in _transform_option_buttons:
-		var button: Button = _transform_option_buttons[kind]
-		button.visible = kind in available
-		button.text = "%s ×%d" % [kind, game.captured_pieces[game.turn].count(kind)]
+	for name in _transform_option_buttons:
+		var button: Button = _transform_option_buttons[name]
+		button.visible = name in available
+		button.text = "%s ×%d" % [name, game.captured_pieces[game.turn].count(name)]
 		button.disabled = _promotion_box.visible
 	var cancel_button := _transform_box.get_node("CancelTransform") as Button
 	cancel_button.visible = _transform_kind != ""
