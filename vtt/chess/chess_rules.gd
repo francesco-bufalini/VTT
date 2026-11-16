@@ -23,6 +23,9 @@ var history: Array[Dictionary] = []
 # Each player keeps their own pieces previously captured by the opponent.
 var captured_pieces := {"w": [], "b": []}
 var transformed_this_turn := false
+# Temporary forms keyed by owner. Square follows the token when it moves.
+# Record: {"square": [file, rank], "original": "P"/"N"/"B"/"R"/"Q"}.
+var active_transforms: Dictionary = {}
 var finished := false
 var status := ""
 
@@ -50,6 +53,7 @@ func reset() -> void:
 	history.clear()
 	captured_pieces = {"w": [], "b": []}
 	transformed_this_turn = false
+	active_transforms.clear()
 	position_counts.clear()
 	finished = false
 	_record_position()
@@ -255,7 +259,7 @@ func available_transformations() -> Array[String]:
 
 
 func transform(at: Vector2i, kind: String) -> bool:
-	if finished or transformed_this_turn or not inside(at) or kind not in available_transformations():
+	if finished or transformed_this_turn or active_transforms.has(turn) or not inside(at) or kind not in available_transformations():
 		return false
 	var previous := piece(at)
 	if not previous.begins_with(turn) or previous.ends_with("K"):
@@ -265,6 +269,7 @@ func transform(at: Vector2i, kind: String) -> bool:
 	if previous.ends_with("R"):
 		_revoke_corner(at)
 	_put(board, at, turn + kind)
+	active_transforms[turn] = {"square": [at.x, at.y], "original": previous.substr(1, 1)}
 	transformed_this_turn = true
 	# En passant remains possible during the ordinary move of this turn.
 	# Transforming changes material and therefore resets the draw clock.
@@ -272,6 +277,21 @@ func transform(at: Vector2i, kind: String) -> bool:
 	_record_position()
 	_evaluate()
 	return true
+
+
+static func _transform_square(record: Dictionary) -> Vector2i:
+	var at: Array = record["square"]
+	return Vector2i(int(at[0]), int(at[1]))
+
+
+func _revert_transformation(side: String) -> void:
+	if not active_transforms.has(side):
+		return
+	var record: Dictionary = active_transforms[side]
+	var at := _transform_square(record)
+	if inside(at) and piece(at).begins_with(side):
+		_put(board, at, side + String(record["original"]))
+	active_transforms.erase(side)
 
 
 func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
@@ -286,13 +306,25 @@ func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 		return false
 	history.append(_state_without_history())
 	var moving := piece(from)
-	var captured := piece(to)
 	var moving_side := turn
-	if bool(chosen.get("en_passant", false)):
-		captured = piece(Vector2i(to.x, from.y))
+	var captured_at := Vector2i(to.x, from.y) if bool(chosen.get("en_passant", false)) else to
+	var captured := piece(captured_at)
+	var captured_kind := captured.substr(1, 1)
+	var victim_side := opposite(moving_side)
+	if active_transforms.has(victim_side):
+		var victim_record: Dictionary = active_transforms[victim_side]
+		if _transform_square(victim_record) == captured_at:
+			# A captured disguised piece counts as its original kind.
+			captured_kind = String(victim_record["original"])
+			active_transforms.erase(victim_side)
 	_apply_to(board, from, chosen, promotion)
 	if captured != ".":
-		captured_pieces[opposite(moving_side)].append(captured.substr(1, 1))
+		captured_pieces[victim_side].append(captured_kind)
+	if active_transforms.has(moving_side):
+		var own_record: Dictionary = active_transforms[moving_side]
+		if _transform_square(own_record) == from:
+			own_record["square"] = [to.x, to.y]
+			active_transforms[moving_side] = own_record
 	if moving.ends_with("K"):
 		castling[moving_side + "K"] = false
 		castling[moving_side + "Q"] = false
@@ -308,13 +340,16 @@ func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 		fullmove_number += 1
 	turn = opposite(turn)
 	transformed_this_turn = false
+	# Once the opponent has played, restore this player's transformed piece
+	# BEFORE evaluating check, legal moves, and possible game over.
+	_revert_transformation(turn)
 	_record_position()
 	_evaluate()
 	return true
 
 
 func _position_key() -> String:
-	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_pieces) + ":" + str(transformed_this_turn)
+	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_pieces) + ":" + str(transformed_this_turn) + ":" + JSON.stringify(active_transforms)
 
 
 func _record_position() -> void:
@@ -333,7 +368,7 @@ func _has_legal_move() -> bool:
 
 func _insufficient_material() -> bool:
 	# A captured piece may return, so kings alone do not guarantee a dead position.
-	if not captured_pieces["w"].is_empty() or not captured_pieces["b"].is_empty():
+	if not captured_pieces["w"].is_empty() or not captured_pieces["b"].is_empty() or not active_transforms.is_empty():
 		return false
 	var minors: Array[Dictionary] = []
 	for i in range(board.size()):
@@ -406,7 +441,8 @@ func _state_without_history() -> Dictionary:
 		"halfmove_clock": halfmove_clock, "fullmove_number": fullmove_number,
 		"position_counts": position_counts.duplicate(true),
 		"captured_pieces": captured_pieces.duplicate(true),
-		"transformed_this_turn": transformed_this_turn
+		"transformed_this_turn": transformed_this_turn,
+		"active_transforms": active_transforms.duplicate(true)
 	}
 
 
@@ -458,6 +494,38 @@ func restore_state(data: Dictionary) -> bool:
 	var used: Variant = data.get("transformed_this_turn", false)
 	if not used is bool:
 		return false
+	var source_transforms: Variant = data.get("active_transforms", {})
+	if not source_transforms is Dictionary:
+		return false
+	var parsed_transforms: Dictionary = {}
+	for side in source_transforms:
+		if side not in ["w", "b"]:
+			return false
+		var record: Variant = source_transforms[side]
+		if not record is Dictionary:
+			return false
+		var coordinates: Variant = record.get("square")
+		var original: Variant = record.get("original")
+		if not coordinates is Array or coordinates.size() != 2 or not coordinates[0] is int or not coordinates[1] is int:
+			return false
+		if original not in ["P", "N", "B", "R", "Q"]:
+			return false
+		var at := Vector2i(coordinates[0], coordinates[1])
+		if not inside(at) or not parsed[at.y * 8 + at.x].begins_with(side):
+			return false
+		parsed_transforms[side] = {"square": [at.x, at.y], "original": original}
+	# Legacy save directly after a transformation: retrieve the original kind
+	# from the last undo snapshot (old saves had no transformation metadata).
+	if not data.has("active_transforms") and used and not parsed_transforms.has(next_turn):
+		var snapshots: Variant = data.get("history", [])
+		if snapshots is Array and not snapshots.is_empty():
+			var before: Variant = snapshots.back()
+			if before is Dictionary and before.get("board") is Array and before["board"].size() == 64:
+				for i in range(64):
+					var previous: Variant = before["board"][i]
+					if previous is String and previous.begins_with(next_turn) and not previous.ends_with("K") and previous != parsed[i]:
+						parsed_transforms[next_turn] = {"square": [i % 8, i / 8], "original": previous.substr(1, 1)}
+						break
 	board = parsed
 	turn = next_turn
 	castling = {
@@ -469,6 +537,7 @@ func restore_state(data: Dictionary) -> bool:
 	fullmove_number = full
 	captured_pieces = parsed_reserves
 	transformed_this_turn = used
+	active_transforms = parsed_transforms
 	position_counts = data.get("position_counts", {}).duplicate(true) if data.get("position_counts") is Dictionary else {}
 	history.clear()
 	var previous: Variant = data.get("history", [])
