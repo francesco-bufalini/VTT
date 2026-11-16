@@ -185,6 +185,15 @@ func run() -> void:
 	assert(scene.get_node("ChessTable") != null)
 	assert(scene.get_node("ChessTokens").get_child_count() == 32,
 		"The scenario must spawn all 32 generic chess piece tokens")
+	# The visible interface exposes captured pieces and transforms the selected token.
+	var visual_game = scene.get("game")
+	assert(visual_game.restore_state(rights_state))
+	scene.call("_refresh")
+	var controls: HFlowContainer = scene.get("_transform_buttons")
+	assert(controls.get_child_count() == 1, "The recovered knight needs an action button")
+	scene.call("_set_transform_kind", "N")
+	scene.call("_select_cell", Vector2i(7, 7))
+	assert(visual_game.piece(Vector2i(7, 7)) == "wN")
 	scene.queue_free()
 	await process_frame
 	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, captured-piece transformation")
