@@ -18,6 +18,10 @@ var _status_label: Label
 var _help_label: Label
 var _promotion_box: VBoxContainer
 var _undo_button: Button
+var _transform_box: VBoxContainer
+var _transform_buttons: HFlowContainer
+var _transform_summary: Label
+var _transform_kind := ""
 var _camera: Camera3D
 
 var _light_tile: StandardMaterial3D
@@ -25,6 +29,7 @@ var _dark_tile: StandardMaterial3D
 var _selected_tile: StandardMaterial3D
 var _legal_tile: StandardMaterial3D
 var _checked_tile: StandardMaterial3D
+var _transform_tile: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -80,6 +85,7 @@ func _build_table() -> void:
 	_selected_tile = _material(Color(0.97, 0.70, 0.20))
 	_legal_tile = _material(Color(0.30, 0.65, 0.45))
 	_checked_tile = _material(Color(0.84, 0.20, 0.21))
+	_transform_tile = _material(Color(0.36, 0.66, 0.91))
 	var wood := _material(Color(0.12, 0.09, 0.14), 0.18)
 	var board_root := Node3D.new()
 	board_root.name = "ChessTable"
@@ -166,13 +172,17 @@ func _build_interface() -> void:
 	panel.offset_left = -370.0
 	panel.offset_right = -16.0
 	panel.offset_top = 16.0
-	panel.offset_bottom = 480.0
+	panel.offset_bottom = 600.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	screen.add_child(panel)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(scroll)
 	var margin := MarginContainer.new()
+	margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	for key in ["margin_left", "margin_right", "margin_top", "margin_bottom"]:
 		margin.add_theme_constant_override(key, 18)
-	panel.add_child(margin)
+	scroll.add_child(margin)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 13)
 	margin.add_child(column)
@@ -188,6 +198,21 @@ func _build_interface() -> void:
 	_help_label.text = "Seleziona un token, poi una casella evidenziata.\nK Re · Q Regina · R Torre\nB Alfiere · N Cavallo · P Pedone"
 	_help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_help_label)
+	_transform_box = VBoxContainer.new()
+	column.add_child(_transform_box)
+	var transform_title := Label.new()
+	transform_title.text = "MAGIA: TRASFORMA UN PEZZO"
+	_transform_box.add_child(transform_title)
+	_transform_summary = Label.new()
+	_transform_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_transform_box.add_child(_transform_summary)
+	_transform_buttons = HFlowContainer.new()
+	_transform_box.add_child(_transform_buttons)
+	var cancel_transform := Button.new()
+	cancel_transform.text = "Annulla selezione trasformazione"
+	cancel_transform.pressed.connect(_cancel_transformation)
+	_transform_box.add_child(cancel_transform)
+	cancel_transform.name = "CancelTransform"
 	_promotion_box = VBoxContainer.new()
 	_promotion_box.visible = false
 	column.add_child(_promotion_box)
@@ -203,7 +228,7 @@ func _build_interface() -> void:
 		button.pressed.connect(_promote.bind(entry[0]))
 		options.add_child(button)
 	_undo_button = Button.new()
-	_undo_button.text = "Annulla ultima mossa"
+	_undo_button.text = "Annulla ultima azione"
 	_undo_button.pressed.connect(_undo)
 	column.add_child(_undo_button)
 	var reset_button := Button.new()
@@ -237,6 +262,14 @@ func _unhandled_input(event: InputEvent) -> void:
 func _select_cell(cell: Vector2i) -> void:
 	if game.finished:
 		return
+	if _transform_kind != "":
+		if game.transform(cell, _transform_kind):
+			_transform_kind = ""
+			_selected = NO_SQUARE
+			_destinations.clear()
+			_save()
+		_refresh()
+		return
 	if _selected != NO_SQUARE:
 		for move in _destinations:
 			if move["to"] == cell:
@@ -257,6 +290,29 @@ func _select_cell(cell: Vector2i) -> void:
 	_refresh()
 
 
+func _set_transform_kind(kind: String) -> void:
+	if _promotion_box.visible or kind not in game.available_transformations():
+		return
+	_transform_kind = kind
+	_selected = NO_SQUARE
+	_destinations.clear()
+	_refresh()
+
+
+func _cancel_transformation() -> void:
+	_transform_kind = ""
+	_refresh()
+
+
+func _reserve_description(side: String) -> String:
+	var parts: Array[String] = []
+	for kind in ["Q", "R", "B", "N", "P"]:
+		var count: int = game.captured_pieces[side].count(kind)
+		if count:
+			parts.append("%s×%d" % [kind, count])
+	return ", ".join(parts) if not parts.is_empty() else "nessuno"
+
+
 func _promote(kind: String) -> void:
 	if _promotion_from != NO_SQUARE and _promotion_to != NO_SQUARE:
 		_play_move(_promotion_from, _promotion_to, kind)
@@ -270,6 +326,7 @@ func _play_move(from: Vector2i, to: Vector2i, promotion: String = "Q") -> void:
 		return
 	_selected = NO_SQUARE
 	_destinations.clear()
+	_transform_kind = ""
 	_promotion_box.visible = false
 	_save()
 	_refresh()
@@ -277,6 +334,7 @@ func _play_move(from: Vector2i, to: Vector2i, promotion: String = "Q") -> void:
 
 func _reset() -> void:
 	game.reset()
+	_transform_kind = ""
 	_selected = NO_SQUARE
 	_destinations.clear()
 	_promotion_from = NO_SQUARE
@@ -288,6 +346,7 @@ func _reset() -> void:
 
 func _undo() -> void:
 	if game.undo():
+		_transform_kind = ""
 		_selected = NO_SQUARE
 		_destinations.clear()
 		_promotion_from = NO_SQUARE
@@ -321,6 +380,8 @@ func _refresh() -> void:
 			var material: Material = _light_tile if (file + rank) % 2 == 0 else _dark_tile
 			if cell == checked_king:
 				material = _checked_tile
+			if _transform_kind != "" and game.piece(cell).begins_with(game.turn) and not game.piece(cell).ends_with("K"):
+				material = _transform_tile
 			if legal_targets.has(cell):
 				material = _legal_tile
 			if cell == _selected:
@@ -335,7 +396,31 @@ func _refresh() -> void:
 			if code != ".":
 				_make_piece(code, cell)
 	_status_label.text = game.status + "\nMossa %d" % game.fullmove_number
+	if game.transformed_this_turn and not game.finished:
+		_status_label.text += "\nTrasformazione usata: completa la mossa."
 	_undo_button.disabled = game.history.is_empty()
+	_transform_summary.text = "Bianchi persi: %s\nNeri persi: %s" % [
+		_reserve_description("w"), _reserve_description("b")
+	]
+	for child in _transform_buttons.get_children():
+		_transform_buttons.remove_child(child)
+		child.queue_free()
+	for kind in game.available_transformations():
+		var button := Button.new()
+		button.text = "%s ×%d" % [kind, game.captured_pieces[game.turn].count(kind)]
+		button.tooltip_text = "Scegli questo pezzo catturato e poi clicca un tuo token (non il Re)"
+		button.pressed.connect(_set_transform_kind.bind(kind))
+		button.disabled = _promotion_box.visible
+		_transform_buttons.add_child(button)
+	var cancel_button := _transform_box.get_node("CancelTransform") as Button
+	cancel_button.visible = _transform_kind != ""
+	_transform_box.visible = not game.finished
 	if not _promotion_box.visible:
-		_help_label.text = ("Partita conclusa. Premi Nuova partita per ricominciare." if game.finished
-			else "Seleziona un token, poi una casella evidenziata.\nK Re · Q Regina · R Torre\nB Alfiere · N Cavallo · P Pedone")
+		if game.finished:
+			_help_label.text = "Partita conclusa. Premi Nuova partita per ricominciare."
+		elif _transform_kind != "":
+			_help_label.text = "Clicca un tuo pezzo azzurro (non il Re) per trasformarlo in %s. Poi esegui la normale mossa." % _transform_kind
+		elif game.available_transformations().is_empty():
+			_help_label.text = "Seleziona un token, poi una casella verde.\nK Re · Q Regina · R Torre · B Alfiere · N Cavallo · P Pedone"
+		else:
+			_help_label.text = "Puoi trasformare un tuo pezzo usando quelli catturati (una volta per turno), poi muovere normalmente. Oppure muovi subito."
