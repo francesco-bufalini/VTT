@@ -50,6 +50,14 @@ const BUILTIN_CAMPAIGNS := [
 		"scene": "res://dnd_base.tscn",
 		"preview": "",
 		"builtin": true
+	},
+	{
+		"id": "scacchi_dei_maghi",
+		"name": "Scacchi dei Maghi",
+		"description": "Una sfida di scacchi 3D: bianchi contro neri, con regole classiche.",
+		"scene": "res://vtt/chess/wizard_chess.tscn",
+		"preview": "",
+		"builtin": true
 	}
 ]
 
