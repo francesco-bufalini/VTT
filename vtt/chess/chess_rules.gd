@@ -648,7 +648,7 @@ func _has_legal_move() -> bool:
 	for y in range(8):
 		for x in range(8):
 			var at := Vector2i(x, y)
-			if piece(at).begins_with(turn) and not legal_moves(at).is_empty():
+			if piece(at).begins_with(turn) and (not legal_moves(at).is_empty() or not power_moves(at).is_empty()):
 				return true
 	return false
 
