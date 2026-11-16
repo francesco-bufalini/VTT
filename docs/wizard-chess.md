@@ -8,14 +8,15 @@ La scena crea una scacchiera tridimensionale 8×8 e 32 token stilizzati. I token
 
 1. I bianchi giocano per primi. Clicca un token del colore di turno.
 2. Le caselle di destinazione legale diventano verdi; cliccane una per muovere e, se occupata da un avversario, catturare.
-3. Il turno passa automaticamente al colore opposto. Il re sotto scacco è evidenziato in rosso.
-4. Alla promozione del pedone, scegli Regina, Torre, Alfiere o Cavallo.
-5. **Annulla ultima mossa** ripristina la posizione precedente; **Nuova partita** ripristina tutti i pezzi.
-6. **Torna agli scenari** riapre la lista della campagna.
+3. **All'inizio di ciascun turno, prima della mossa**, puoi usare **una trasformazione**: se possiedi pezzi catturati dall'avversario nei turni precedenti, scegli il tipo di pezzo dal pannello «MAGIA: TRASFORMA UN PEZZO», poi clicca un tuo token evidenziato in azzurro per sostituirlo. Il Re non può essere trasformato. Il pezzo catturato usato viene rimosso dalla riserva; il pezzo sostituito sparisce senza entrare nella riserva. La trasformazione non passa il turno: devi ancora eseguire una mossa normale. Puoi anche saltare la trasformazione e muovere direttamente.
+4. Il turno passa automaticamente al colore opposto **dopo la mossa normale**. Il re sotto scacco è evidenziato in rosso.
+5. Alla promozione del pedone, scegli Regina, Torre, Alfiere o Cavallo.
+6. **Annulla ultima azione** annulla separatamente trasformazione e mossa, ripristinando anche le riserve; **Nuova partita** ripristina tutti i pezzi e svuota le riserve.
+7. **Torna agli scenari** riapre la lista della campagna.
 
 ## Regole e dati
 
-Il motore in `vtt/chess/chess_rules.gd` è indipendente dalla grafica e non considera valide le mosse che lascerebbero il proprio re sotto scacco. Gestisce arrocco (incluse caselle attraversate sotto attacco e diritti persi), presa en passant, promozione, scacco, scacco matto, stallo, patta per materiale insufficiente, triplice ripetizione e regola delle 50 mosse. La partita è **locale, a due giocatori sullo stesso computer**, senza avversario controllato dall'IA.
+Il motore in `vtt/chess/chess_rules.gd` è indipendente dalla grafica e non considera valide le mosse che lascerebbero il proprio re sotto scacco. Le riserve di pezzi catturati sono distinte per colore e persistono nel salvataggio; la trasformazione non concede un'altra mossa o un secondo utilizzo nello stesso turno. Il motore evita di dichiarare scacco matto se una trasformazione seguita da una mossa legale può salvare il Re, e non dichiara patta per materiale insufficiente se restano pezzi recuperabili nelle riserve. Gestisce arrocco (incluse caselle attraversate sotto attacco e diritti persi), presa en passant, promozione, scacco, scacco matto, stallo, patta per materiale insufficiente, triplice ripetizione e regola delle 50 mosse. La partita è **locale, a due giocatori sullo stesso computer**, senza avversario controllato dall'IA.
 
 Lo stato viene salvato in modo indipendente dalle mappe e ripristinato riaprendo lo scenario mediante `CampaignManager.save_active_runtime_state()` e `load_active_runtime_state()`. Gli altri scenari del VTT non vengono alterati. I token di gioco sono semplici mesh/etichette tridimensionali, non creature D&D, perciò non possono essere spostati tramite il sistema generale dei token VTT aggirando le regole.
 
@@ -25,4 +26,4 @@ Lo stato viene salvato in modo indipendente dalle mappe e ripristinato riaprendo
 godot --headless --path . --script res://tests/test_wizard_chess.gd
 ```
 
-La suite verifica mosse iniziali e alternanza, impedimento dei turni doppi, scacco matto, stallo, arrocco, en passant, sottopromozione, annullamento, stato serializzato e 32 token nella scena. Il workflow `.github/workflows/wizard-chess.yml` esegue lo stesso test su GitHub Actions.
+La suite verifica mosse iniziali e alternanza, impedimento dei turni doppi, scacco matto, stallo, arrocco, en passant, sottopromozione, annullamento, stato serializzato, riserve dei catturati, trasformazioni una per turno, arrocco dopo trasformazione, annullamento e fuga da scacco grazie a una trasformazione, oltre ai 32 token iniziali nella scena. Il workflow `.github/workflows/wizard-chess.yml` esegue lo stesso test su GitHub Actions.

@@ -20,6 +20,9 @@ var halfmove_clock := 0
 var fullmove_number := 1
 var position_counts: Dictionary = {}
 var history: Array[Dictionary] = []
+# Each player keeps their own pieces previously captured by the opponent.
+var captured_pieces := {"w": [], "b": []}
+var transformed_this_turn := false
 var finished := false
 var status := ""
 
@@ -45,6 +48,8 @@ func reset() -> void:
 	halfmove_clock = 0
 	fullmove_number = 1
 	history.clear()
+	captured_pieces = {"w": [], "b": []}
+	transformed_this_turn = false
 	position_counts.clear()
 	finished = false
 	_record_position()
@@ -237,6 +242,38 @@ func _revoke_corner(pos: Vector2i) -> void:
 		castling["bK"] = false
 
 
+## A player may exchange one non-king piece for one of their captured pieces
+## before making the ordinary move of their turn. Recovered pieces are spent.
+func available_transformations() -> Array[String]:
+	var available: Array[String] = []
+	if finished or transformed_this_turn:
+		return available
+	for kind in captured_pieces.get(turn, []):
+		if kind not in available:
+			available.append(kind)
+	return available
+
+
+func transform(at: Vector2i, kind: String) -> bool:
+	if finished or transformed_this_turn or not inside(at) or kind not in available_transformations():
+		return false
+	var previous := piece(at)
+	if not previous.begins_with(turn) or previous.ends_with("K"):
+		return false
+	history.append(_state_without_history())
+	captured_pieces[turn].erase(kind)
+	if previous.ends_with("R"):
+		_revoke_corner(at)
+	_put(board, at, turn + kind)
+	transformed_this_turn = true
+	# En passant remains possible during the ordinary move of this turn.
+	# Transforming changes material and therefore resets the draw clock.
+	halfmove_clock = 0
+	_record_position()
+	_evaluate()
+	return true
+
+
 func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 	if finished or promotion not in ["Q", "R", "B", "N"]:
 		return false
@@ -251,7 +288,11 @@ func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 	var moving := piece(from)
 	var captured := piece(to)
 	var moving_side := turn
+	if bool(chosen.get("en_passant", false)):
+		captured = piece(Vector2i(to.x, from.y))
 	_apply_to(board, from, chosen, promotion)
+	if captured != ".":
+		captured_pieces[opposite(moving_side)].append(captured.substr(1, 1))
 	if moving.ends_with("K"):
 		castling[moving_side + "K"] = false
 		castling[moving_side + "Q"] = false
@@ -266,13 +307,14 @@ func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 	if moving_side == "b":
 		fullmove_number += 1
 	turn = opposite(turn)
+	transformed_this_turn = false
 	_record_position()
 	_evaluate()
 	return true
 
 
 func _position_key() -> String:
-	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant)
+	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_pieces) + ":" + str(transformed_this_turn)
 
 
 func _record_position() -> void:
@@ -290,6 +332,9 @@ func _has_legal_move() -> bool:
 
 
 func _insufficient_material() -> bool:
+	# A captured piece may return, so kings alone do not guarantee a dead position.
+	if not captured_pieces["w"].is_empty() or not captured_pieces["b"].is_empty():
+		return false
 	var minors: Array[Dictionary] = []
 	for i in range(board.size()):
 		var code := board[i]
@@ -304,11 +349,34 @@ func _insufficient_material() -> bool:
 	return minors.size() == 2 and minors[0]["code"].ends_with("B") and minors[1]["code"].ends_with("B") and minors[0]["code"].substr(0, 1) != minors[1]["code"].substr(0, 1) and minors[0]["color"] == minors[1]["color"]
 
 
+## Test whether a turn that has no legal ordinary move can be rescued
+## by exchanging a piece; otherwise checkmate/stalemate remains definitive.
+func _has_transform_escape() -> bool:
+	if transformed_this_turn or captured_pieces[turn].is_empty():
+		return false
+	for index in range(board.size()):
+		var previous := board[index]
+		if not previous.begins_with(turn) or previous.ends_with("K"):
+			continue
+		for kind in captured_pieces[turn]:
+			var old_rights: Dictionary = castling.duplicate()
+			if previous.ends_with("R"):
+				_revoke_corner(Vector2i(index % 8, index / 8))
+			board[index] = turn + kind
+			var has_reply := _has_legal_move()
+			board[index] = previous
+			castling = old_rights
+			if has_reply:
+				return true
+	return false
+
+
 func _evaluate() -> void:
 	finished = false
 	var check := in_check(turn)
 	var side_name := "bianchi" if turn == "w" else "neri"
-	if not _has_legal_move():
+	var has_move := _has_legal_move()
+	if not has_move and not _has_transform_escape():
 		finished = true
 		if check:
 			status = "SCACCO MATTO! Vincono i neri." if turn == "w" else "SCACCO MATTO! Vincono i bianchi."
@@ -323,6 +391,8 @@ func _evaluate() -> void:
 	elif _insufficient_material():
 		finished = true
 		status = "PATTA: materiale insufficiente."
+	elif not has_move:
+		status = "Nessuna mossa disponibile: i %s devono trasformare un pezzo." % side_name
 	elif check:
 		status = "SCACCO al re dei %s! Tocca ai %s." % [side_name, side_name]
 	else:
@@ -334,7 +404,9 @@ func _state_without_history() -> Dictionary:
 		"board": board.duplicate(), "turn": turn, "castling": castling.duplicate(),
 		"en_passant": [en_passant.x, en_passant.y],
 		"halfmove_clock": halfmove_clock, "fullmove_number": fullmove_number,
-		"position_counts": position_counts.duplicate(true)
+		"position_counts": position_counts.duplicate(true),
+		"captured_pieces": captured_pieces.duplicate(true),
+		"transformed_this_turn": transformed_this_turn
 	}
 
 
@@ -371,6 +443,21 @@ func restore_state(data: Dictionary) -> bool:
 	var full: int = int(data.get("fullmove_number", 1))
 	if half < 0 or full < 1:
 		return false
+	var reserves: Variant = data.get("captured_pieces", {"w": [], "b": []})
+	if not reserves is Dictionary:
+		return false
+	var parsed_reserves := {"w": [], "b": []}
+	for side in ["w", "b"]:
+		var entries: Variant = reserves.get(side, [])
+		if not entries is Array or entries.size() > 32:
+			return false
+		for kind in entries:
+			if kind not in ["P", "N", "B", "R", "Q"]:
+				return false
+			parsed_reserves[side].append(kind)
+	var used: Variant = data.get("transformed_this_turn", false)
+	if not used is bool:
+		return false
 	board = parsed
 	turn = next_turn
 	castling = {
@@ -380,6 +467,8 @@ func restore_state(data: Dictionary) -> bool:
 	en_passant = target
 	halfmove_clock = half
 	fullmove_number = full
+	captured_pieces = parsed_reserves
+	transformed_this_turn = used
 	position_counts = data.get("position_counts", {}).duplicate(true) if data.get("position_counts") is Dictionary else {}
 	history.clear()
 	var previous: Variant = data.get("history", [])
