@@ -56,7 +56,7 @@ jobs:
         run: |
           set -euo pipefail
           GODOT=/tmp/Godot_v4.7.2-stable_linux.x86_64
-          timeout 45s "$GODOT" --headless --path . --script res://tests/test_wizard_chess.gd > /tmp/chess.log 2>&1 || {
+          timeout 15s "$GODOT" --headless --path . --script res://tests/test_wizard_chess.gd > /tmp/chess.log 2>&1 || {
             cat /tmp/chess.log
             exit 1
           }

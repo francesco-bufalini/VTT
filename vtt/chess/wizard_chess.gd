@@ -24,6 +24,15 @@ var _transform_box: VBoxContainer
 var _transform_buttons: HFlowContainer
 var _transform_summary: Label
 var _transform_kind := ""
+var _power_mode := ""
+var _power_kind := ""
+var _power_buttons: Dictionary = {}
+var _revive_buttons: Dictionary = {}
+var _power_summary: Label
+var _promotion_is_power := false
+var _wall_white: StandardMaterial3D
+var _wall_black: StandardMaterial3D
+var _curse_tile: StandardMaterial3D
 var _camera: Camera3D
 
 var _light_tile: StandardMaterial3D
@@ -88,6 +97,9 @@ func _build_table() -> void:
 	_legal_tile = _material(Color(0.30, 0.65, 0.45))
 	_checked_tile = _material(Color(0.84, 0.20, 0.21))
 	_transform_tile = _material(Color(0.36, 0.66, 0.91))
+	_wall_white = _material(Color(0.32, 0.56, 0.87))
+	_wall_black = _material(Color(0.68, 0.33, 0.77))
+	_curse_tile = _material(Color(0.73, 0.16, 0.45))
 	var wood := _material(Color(0.12, 0.09, 0.14), 0.18)
 	var board_root := Node3D.new()
 	board_root.name = "ChessTable"
@@ -130,6 +142,8 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	token.position = Vector3(float(cell.x) - 3.5, 0.15, float(cell.y) - 3.5)
 	token.set_meta("chess_piece", code)
 	token.set_meta("chess_square", cell)
+	token.set_meta("royal", game.is_royal(cell))
+	token.set_meta("cursed", game.is_cursed(cell))
 	_piece_root.add_child(token)
 	_piece_nodes[cell.y * 8 + cell.x] = token
 	var pale := side == "w"
@@ -153,7 +167,7 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	cap.height = cap.radius * 2.0
 	_mesh(token, cap, trim, Vector3(0, 0.13 + height + 0.08, 0))
 	var symbol := Label3D.new()
-	symbol.text = kind
+	symbol.text = kind + (" ★" if game.is_royal(cell) and kind == "Q" else "") + (" ✖" if game.is_cursed(cell) else "")
 	symbol.font_size = 90
 	symbol.pixel_size = 0.0045
 	symbol.modulate = Color(0.16, 0.12, 0.10) if pale else Color(1.0, 0.93, 0.76)
@@ -175,7 +189,7 @@ func _build_interface() -> void:
 	panel.offset_left = -370.0
 	panel.offset_right = -16.0
 	panel.offset_top = 16.0
-	panel.offset_bottom = 600.0
+	panel.offset_bottom = 730.0
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	screen.add_child(panel)
 	var scroll := ScrollContainer.new()
@@ -201,6 +215,43 @@ func _build_interface() -> void:
 	_help_label.text = "Seleziona un token, poi una casella evidenziata.\nK Re · Q Regina · R Torre\nB Alfiere · N Cavallo · P Pedone"
 	_help_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_help_label)
+	var power_panel := VBoxContainer.new()
+	power_panel.add_theme_constant_override("separation", 6)
+	column.add_child(power_panel)
+	var power_title := Label.new()
+	power_title.text = "POTERI DEI PEZZI"
+	power_title.add_theme_font_size_override("font_size", 19)
+	power_panel.add_child(power_title)
+	_power_summary = Label.new()
+	_power_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	power_panel.add_child(_power_summary)
+	var power_actions := HFlowContainer.new()
+	power_panel.add_child(power_actions)
+	for entry in [
+		["dash", "Scatto · Pedone"], ["sweep", "Travolgi · Cavallo"],
+		["wall_rank", "Muro orizzontale"], ["wall_file", "Muro verticale"],
+		["revive", "Resuscita · Alfiere"], ["curse", "Maledici · Alfiere"],
+		["coup", "Regina sovrana"]
+	]:
+		var button := Button.new()
+		button.text = entry[1]
+		button.pressed.connect(_activate_power.bind(entry[0]))
+		_power_buttons[entry[0]] = button
+		power_actions.add_child(button)
+	var revival_actions := HFlowContainer.new()
+	power_panel.add_child(revival_actions)
+	for kind in ["Q", "R", "B", "N", "P", "K"]:
+		var button := Button.new()
+		button.text = "Riporta " + kind
+		button.pressed.connect(_choose_revival.bind(kind))
+		_revive_buttons[kind] = button
+		revival_actions.add_child(button)
+	var cancel_power := Button.new()
+	cancel_power.name = "CancelPower"
+	cancel_power.text = "Annulla potere"
+	cancel_power.pressed.connect(_cancel_power)
+	power_panel.add_child(cancel_power)
+	_power_buttons["cancel"] = cancel_power
 	_transform_box = VBoxContainer.new()
 	column.add_child(_transform_box)
 	var transform_title := Label.new()
@@ -280,6 +331,30 @@ func _select_cell(cell: Vector2i) -> void:
 			_save()
 		_refresh()
 		return
+	if _power_mode != "":
+		if _selected != NO_SQUARE:
+			var worked := false
+			match _power_mode:
+				"dash", "sweep":
+					for candidate in _destinations:
+						if candidate["to"] == cell:
+							if bool(candidate.get("promotion", false)):
+								_promotion_from = _selected
+								_promotion_to = cell
+								_promotion_is_power = true
+								_promotion_box.visible = true
+								return
+							worked = game.play_power(_selected, cell)
+							break
+				"revive":
+					worked = game.revive(_selected, cell, _power_kind)
+				"curse":
+					worked = game.curse(_selected, cell)
+			if worked:
+				_finish_action()
+			else:
+				_refresh()
+		return
 	if _selected != NO_SQUARE:
 		for move in _destinations:
 			if move["to"] == cell:
@@ -294,9 +369,71 @@ func _select_cell(cell: Vector2i) -> void:
 	if game.piece(cell).begins_with(game.turn):
 		_selected = cell
 		_destinations = game.legal_moves(cell)
+	elif game.piece(cell).ends_with("Q") and not bool(game.coup_used[game.piece(cell).substr(0, 1)]):
+		# Queen's coup can be activated even during the opponent's turn.
+		_selected = cell
+		_destinations.clear()
 	else:
 		_selected = NO_SQUARE
 		_destinations.clear()
+	_refresh()
+
+
+func _activate_power(power: String) -> void:
+	if game.finished or _selected == NO_SQUARE:
+		return
+	match power:
+		"wall_rank", "wall_file":
+			if game.activate_wall(_selected, "rank" if power == "wall_rank" else "file"):
+				_finish_action()
+		"coup":
+			if game.queen_coup(_selected):
+				_finish_action()
+		"dash", "sweep":
+			var code: String = game.piece(_selected)
+			if code.begins_with(game.turn):
+				_power_mode = power
+				_destinations.clear()
+				for move in game.power_moves(_selected):
+					if move["power"] == power:
+						_destinations.append(move)
+		"revive":
+			if game.can_revive(_selected):
+				_power_mode = "revive_choose"
+				_destinations.clear()
+		"curse":
+			if game.can_curse(_selected):
+				_power_mode = "curse"
+				_destinations.clear()
+	_refresh()
+
+
+func _choose_revival(kind: String) -> void:
+	if _power_mode != "revive_choose" or kind not in game.available_revivals(_selected):
+		return
+	_power_mode = "revive"
+	_power_kind = kind
+	_refresh()
+
+
+func _cancel_power() -> void:
+	_power_mode = ""
+	_power_kind = ""
+	_destinations.clear()
+	if _selected != NO_SQUARE and game.piece(_selected).begins_with(game.turn):
+		_destinations = game.legal_moves(_selected)
+	_refresh()
+
+
+func _finish_action() -> void:
+	_power_mode = ""
+	_power_kind = ""
+	_transform_kind = ""
+	_selected = NO_SQUARE
+	_destinations.clear()
+	_promotion_is_power = false
+	_promotion_box.visible = false
+	_save()
 	_refresh()
 
 
@@ -304,6 +441,7 @@ func _set_transform_kind(kind: String) -> void:
 	if _promotion_box.visible or kind not in game.available_transformations():
 		return
 	_transform_kind = kind
+	_power_mode = ""
 	_selected = NO_SQUARE
 	_destinations.clear()
 	_refresh()
@@ -316,7 +454,7 @@ func _cancel_transformation() -> void:
 
 func _reserve_description(side: String) -> String:
 	var parts: Array[String] = []
-	for kind in ["Q", "R", "B", "N", "P"]:
+	for kind in ["Q", "R", "B", "N", "P", "K"]:
 		var count: int = game.captured_pieces[side].count(kind)
 		if count:
 			parts.append("%s×%d" % [kind, count])
@@ -325,7 +463,11 @@ func _reserve_description(side: String) -> String:
 
 func _promote(kind: String) -> void:
 	if _promotion_from != NO_SQUARE and _promotion_to != NO_SQUARE:
-		_play_move(_promotion_from, _promotion_to, kind)
+		if _promotion_is_power:
+			if game.play_power(_promotion_from, _promotion_to, kind):
+				_finish_action()
+		else:
+			_play_move(_promotion_from, _promotion_to, kind)
 	_promotion_from = NO_SQUARE
 	_promotion_to = NO_SQUARE
 	_promotion_box.visible = false
@@ -334,17 +476,15 @@ func _promote(kind: String) -> void:
 func _play_move(from: Vector2i, to: Vector2i, promotion: String = "Q") -> void:
 	if not game.play(from, to, promotion):
 		return
-	_selected = NO_SQUARE
-	_destinations.clear()
-	_transform_kind = ""
-	_promotion_box.visible = false
-	_save()
-	_refresh()
+	_finish_action()
 
 
 func _reset() -> void:
 	game.reset()
 	_transform_kind = ""
+	_power_mode = ""
+	_power_kind = ""
+	_promotion_is_power = false
 	_selected = NO_SQUARE
 	_destinations.clear()
 	_promotion_from = NO_SQUARE
@@ -357,6 +497,8 @@ func _reset() -> void:
 func _undo() -> void:
 	if game.undo():
 		_transform_kind = ""
+		_power_mode = ""
+		_power_kind = ""
 		_selected = NO_SQUARE
 		_destinations.clear()
 		_promotion_from = NO_SQUARE
@@ -388,9 +530,21 @@ func _refresh() -> void:
 			var cell := Vector2i(file, rank)
 			var tile: MeshInstance3D = _tiles[rank * 8 + file]
 			var material: Material = _light_tile if (file + rank) % 2 == 0 else _dark_tile
+			var barriers: Array[String] = game.wall_at(cell)
+			if "w" in barriers:
+				material = _wall_white
+			if "b" in barriers:
+				material = _wall_black
+			if game.is_cursed(cell):
+				material = _curse_tile
+			if _power_mode == "revive" and cell != _selected and ChessRules.inside(_selected) and game.piece(cell) == ".":
+				if maxi(absi(cell.x - _selected.x), absi(cell.y - _selected.y)) == 1 and not ChessRules._wall_blocks(game.walls, game.turn, _selected, cell):
+					material = _legal_tile
+			if _power_mode == "curse" and game.piece(cell).begins_with(ChessRules.opposite(game.turn)) and not game.is_royal(cell):
+				material = _legal_tile
 			if cell == checked_king:
 				material = _checked_tile
-			if _transform_kind != "" and game.piece(cell).begins_with(game.turn) and not game.piece(cell).ends_with("K"):
+			if _transform_kind != "" and game.piece(cell).begins_with(game.turn) and not game.is_royal(cell) and not game.is_cursed(cell):
 				material = _transform_tile
 			if legal_targets.has(cell):
 				material = _legal_tile
@@ -406,7 +560,7 @@ func _refresh() -> void:
 			var code: String = game.piece(cell)
 			var existing: Node3D = _piece_nodes.get(index)
 			if existing != null and is_instance_valid(existing):
-				if String(existing.get_meta("chess_piece")) == code:
+				if String(existing.get_meta("chess_piece")) == code and bool(existing.get_meta("royal")) == game.is_royal(cell) and bool(existing.get_meta("cursed")) == game.is_cursed(cell):
 					continue
 				existing.free()
 			_piece_nodes.erase(index)
@@ -422,21 +576,58 @@ func _refresh() -> void:
 			game.piece(ChessRules._transform_square(record)).substr(1, 1),
 			String(record["original"])
 		]
+	for side in ["w", "b"]:
+		if bool(game.coup_used[side]):
+			_status_label.text += "\nLa Regina %s è il Re ★." % ("bianca" if side == "w" else "nera")
+	if not game.walls.is_empty():
+		_status_label.text += "\nMuri magici attivi: %d" % game.walls.size()
 	_undo_button.disabled = game.history.is_empty()
+	var at := _selected
+	var active_code: String = game.piece(at) if at != NO_SQUARE else "."
+	var side: String = active_code.substr(0, 1) if active_code != "." else ""
+	var belongs: bool = side == game.turn
+	var uid: int = game.piece_id(at)
+	var kind: String = active_code.substr(1, 1) if active_code != "." else ""
+	_power_buttons["dash"].visible = belongs and kind == "P" and not game._used(uid, "dash") and not game.power_moves(at).is_empty()
+	_power_buttons["sweep"].visible = belongs and kind == "N" and not game._used(uid, "sweep") and not game.power_moves(at).is_empty()
+	_power_buttons["wall_rank"].visible = belongs and kind == "R" and not game._used(uid, "wall")
+	_power_buttons["wall_file"].visible = belongs and kind == "R" and not game._used(uid, "wall")
+	_power_buttons["revive"].visible = belongs and game.can_revive(at) and not game.available_revivals(at).is_empty()
+	_power_buttons["curse"].visible = belongs and game.can_curse(at)
+	_power_buttons["coup"].visible = kind == "Q" and not bool(game.coup_used.get(side, true)) and not game.is_royal(at)
+	for key in ["dash", "sweep", "wall_rank", "wall_file", "revive", "curse", "coup"]:
+		_power_buttons[key].disabled = game.finished or _promotion_box.visible
+	_power_buttons["cancel"].visible = _power_mode != ""
+	for key in _revive_buttons:
+		var revive_button: Button = _revive_buttons[key]
+		revive_button.visible = _power_mode == "revive_choose" and key in game.available_revivals(_selected)
+	_power_summary.text = "Seleziona un pezzo per vedere i poteri rimasti."
+	if active_code != ".":
+		var spent: Array[String] = []
+		for used_power in game._data(uid).get("used", []):
+			spent.append(String(used_power))
+		_power_summary.text = "Pezzo: %s %s · %s" % [
+			"Bianco" if side == "w" else "Nero", kind,
+			"potere disponibile" if spent.is_empty() else "poteri già usati: " + ", ".join(spent)
+		]
+	if _power_mode != "":
+		_power_summary.text += "\nPotere selezionato: %s" % _power_mode
 	_transform_summary.text = "Bianchi persi: %s\nNeri persi: %s" % [
 		_reserve_description("w"), _reserve_description("b")
 	]
 	var available := game.available_transformations()
-	for kind in _transform_option_buttons:
-		var button: Button = _transform_option_buttons[kind]
-		button.visible = kind in available
-		button.text = "%s ×%d" % [kind, game.captured_pieces[game.turn].count(kind)]
+	for name in _transform_option_buttons:
+		var button: Button = _transform_option_buttons[name]
+		button.visible = name in available
+		button.text = "%s ×%d" % [name, game.captured_pieces[game.turn].count(name)]
 		button.disabled = _promotion_box.visible
 	var cancel_button := _transform_box.get_node("CancelTransform") as Button
 	cancel_button.visible = _transform_kind != ""
 	_transform_box.visible = not game.finished
 	if not _promotion_box.visible:
-		if game.finished:
+		if _power_mode != "":
+			_help_label.text = ("Scegli il pezzo da resuscitare." if _power_mode == "revive_choose" else "Clicca una casella verde per attivare il potere; usa Annulla potere per tornare alle mosse normali.")
+		elif game.finished:
 			_help_label.text = "Partita conclusa. Premi Nuova partita per ricominciare."
 		elif _transform_kind != "":
 			_help_label.text = "Clicca un tuo pezzo azzurro (non il Re) per trasformarlo in %s. Poi esegui la normale mossa." % _transform_kind
