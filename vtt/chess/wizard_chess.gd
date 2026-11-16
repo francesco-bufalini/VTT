@@ -10,6 +10,8 @@ const TILE_SIDE := 1.0
 var game = ChessRules.new()
 var _tiles: Array[MeshInstance3D] = []
 var _piece_root: Node3D
+var _piece_nodes: Dictionary = {}
+var _transform_option_buttons: Dictionary = {}
 var _selected := NO_SQUARE
 var _destinations: Array[Dictionary] = []
 var _promotion_from := NO_SQUARE
@@ -129,6 +131,7 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	token.set_meta("chess_piece", code)
 	token.set_meta("chess_square", cell)
 	_piece_root.add_child(token)
+	_piece_nodes[cell.y * 8 + cell.x] = token
 	var pale := side == "w"
 	var main_color := Color(0.94, 0.91, 0.80) if pale else Color(0.18, 0.16, 0.26)
 	var edge_color := Color(0.68, 0.48, 0.17) if pale else Color(0.45, 0.34, 0.66)
@@ -208,6 +211,13 @@ func _build_interface() -> void:
 	_transform_box.add_child(_transform_summary)
 	_transform_buttons = HFlowContainer.new()
 	_transform_box.add_child(_transform_buttons)
+	# Fixed buttons: never delete a Button while its pressed callback is running.
+	for kind in ["Q", "R", "B", "N", "P"]:
+		var option := Button.new()
+		option.tooltip_text = "Trasforma un tuo pezzo (non il Re) in " + kind
+		option.pressed.connect(_set_transform_kind.bind(kind))
+		_transform_option_buttons[kind] = option
+		_transform_buttons.add_child(option)
 	var cancel_transform := Button.new()
 	cancel_transform.text = "Annulla selezione trasformazione"
 	cancel_transform.pressed.connect(_cancel_transformation)
@@ -387,31 +397,41 @@ func _refresh() -> void:
 			if cell == _selected:
 				material = _selected_tile
 			tile.material_override = material
-	for child in _piece_root.get_children():
-		child.free()
+	# Refresh only changed token meshes. Regenerating all 32 tokens and
+	# their materials/labels on every click caused long GPU stalls.
 	for rank in range(8):
 		for file in range(8):
 			var cell := Vector2i(file, rank)
+			var index := rank * 8 + file
 			var code: String = game.piece(cell)
+			var existing: Node3D = _piece_nodes.get(index)
+			if existing != null and is_instance_valid(existing):
+				if String(existing.get_meta("chess_piece")) == code:
+					continue
+				existing.free()
+			_piece_nodes.erase(index)
 			if code != ".":
 				_make_piece(code, cell)
 	_status_label.text = game.status + "\nMossa %d" % game.fullmove_number
 	if game.transformed_this_turn and not game.finished:
 		_status_label.text += "\nTrasformazione usata: completa la mossa."
+	for side in game.active_transforms:
+		var record: Dictionary = game.active_transforms[side]
+		_status_label.text += "\n%s: %s temporaneo (torna %s al prossimo turno)." % [
+			"Bianchi" if side == "w" else "Neri",
+			game.piece(ChessRules._transform_square(record)).substr(1, 1),
+			String(record["original"])
+		]
 	_undo_button.disabled = game.history.is_empty()
 	_transform_summary.text = "Bianchi persi: %s\nNeri persi: %s" % [
 		_reserve_description("w"), _reserve_description("b")
 	]
-	for child in _transform_buttons.get_children():
-		_transform_buttons.remove_child(child)
-		child.queue_free()
-	for kind in game.available_transformations():
-		var button := Button.new()
+	var available := game.available_transformations()
+	for kind in _transform_option_buttons:
+		var button: Button = _transform_option_buttons[kind]
+		button.visible = kind in available
 		button.text = "%s ×%d" % [kind, game.captured_pieces[game.turn].count(kind)]
-		button.tooltip_text = "Scegli questo pezzo catturato e poi clicca un tuo token (non il Re)"
-		button.pressed.connect(_set_transform_kind.bind(kind))
 		button.disabled = _promotion_box.visible
-		_transform_buttons.add_child(button)
 	var cancel_button := _transform_box.get_node("CancelTransform") as Button
 	cancel_button.visible = _transform_kind != ""
 	_transform_box.visible = not game.finished
@@ -423,4 +443,4 @@ func _refresh() -> void:
 		elif game.available_transformations().is_empty():
 			_help_label.text = "Seleziona un token, poi una casella verde.\nK Re · Q Regina · R Torre · B Alfiere · N Cavallo · P Pedone"
 		else:
-			_help_label.text = "Puoi trasformare un tuo pezzo usando quelli catturati (una volta per turno), poi muovere normalmente. Oppure muovi subito."
+			_help_label.text = "Puoi trasformare un tuo pezzo fino al prossimo turno (una volta per turno), poi muovere. Oppure muovi subito."

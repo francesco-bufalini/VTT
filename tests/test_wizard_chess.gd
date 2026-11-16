@@ -125,13 +125,71 @@ func run() -> void:
 	assert(reloaded.restore_state(transformed_snapshot))
 	assert(reloaded.piece(Vector2i(7, 1)) == "bN" and reloaded.transformed_this_turn)
 	assert(reloaded.available_transformations().is_empty())
-	assert(chess.play(Vector2i(7, 1), Vector2i(5, 0))) # ...Nf8
+	assert(chess.play(Vector2i(7, 1), Vector2i(5, 2))) # ...Nf6
+	assert(chess.turn == "w" and not chess.transformed_this_turn)
+	assert(chess.piece(Vector2i(5, 2)) == "bN")
+	assert(chess.active_transforms["b"]["square"] == [5, 2], "Transformation follows the token")
+	var moved_snapshot: Dictionary = chess.export_state()
+	assert(reloaded.restore_state(moved_snapshot))
+	assert(reloaded.active_transforms["b"]["square"] == [5, 2], "Save preserves transformed identity")
+	assert(reloaded.play(Vector2i(4, 7), Vector2i(3, 7)), "White completes the next move")
+	assert(reloaded.turn == "b" and reloaded.piece(Vector2i(5, 2)) == "bP",
+		"At the start of Black's next turn, the knight returns to the original pawn")
+	assert(reloaded.active_transforms.is_empty())
+	assert(reloaded.undo() and reloaded.piece(Vector2i(5, 2)) == "bN",
+		"Undo of the opponent's move restores the temporary form")
+	assert(reloaded.active_transforms.has("b"))
+	assert(chess.play(Vector2i(4, 7), Vector2i(3, 7)))
+	assert(chess.turn == "b" and chess.piece(Vector2i(5, 2)) == "bP")
+	assert(chess.active_transforms.is_empty())
+	assert(chess.undo() and chess.piece(Vector2i(5, 2)) == "bN")
 	assert(chess.turn == "w" and not chess.transformed_this_turn)
 	assert(chess.undo() and chess.piece(Vector2i(7, 1)) == "bN")
 	assert(chess.turn == "b" and chess.transformed_this_turn)
 	assert(chess.undo() and chess.piece(Vector2i(7, 1)) == "bP")
 	assert(chess.captured_pieces["b"] == ["N"] and not chess.transformed_this_turn)
 	assert(chess.play(Vector2i(7, 1), Vector2i(7, 2)), "You may skip transformation")
+
+	# The transformation remains active during the opponent's move and
+	# the opponent can capture it. Recover the *original* captured kind.
+	cells = _empty()
+	_index(cells, 7, 7, "wK")
+	_index(cells, 0, 7, "wR")
+	_index(cells, 7, 0, "bK")
+	_index(cells, 0, 3, "bP")
+	var capture_state: Dictionary = {
+		"board": cells.duplicate(), "turn": "b", "castling": {},
+		"en_passant": [-1, -1], "captured_pieces": {"w": [], "b": ["Q"]}
+	}
+	assert(chess.restore_state(capture_state))
+	assert(chess.transform(Vector2i(0, 3), "Q"))
+	assert(chess.play(Vector2i(0, 3), Vector2i(0, 4))) # ...Qa4
+	assert(chess.active_transforms.has("b") and chess.piece(Vector2i(0, 4)) == "bQ")
+	assert(chess.play(Vector2i(0, 7), Vector2i(0, 4))) # Rxa4
+	assert(not chess.active_transforms.has("b"), "The captured token cannot respawn")
+	assert(chess.captured_pieces["b"] == ["P"], "Capture restores original identity in reserves")
+	assert(chess.undo())
+	assert(chess.piece(Vector2i(0, 4)) == "bQ" and chess.active_transforms.has("b"))
+
+	# Both colors may have their own temporary transformation simultaneously.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 7, 6, "wP")
+	_index(cells, 7, 1, "bP")
+	var both_state: Dictionary = {
+		"board": cells.duplicate(), "turn": "w", "castling": {},
+		"en_passant": [-1, -1], "captured_pieces": {"w": ["N"], "b": ["B"]}
+	}
+	assert(chess.restore_state(both_state))
+	assert(chess.transform(Vector2i(7, 6), "N"))
+	assert(chess.play(Vector2i(7, 6), Vector2i(5, 5))) # Nf3
+	assert(chess.transform(Vector2i(7, 1), "B"))
+	assert(chess.play(Vector2i(7, 1), Vector2i(6, 2))) # ...Bg6
+	assert(chess.piece(Vector2i(5, 5)) == "wP" and chess.piece(Vector2i(6, 2)) == "bB")
+	assert(not chess.active_transforms.has("w") and chess.active_transforms.has("b"))
+	assert(chess.play(Vector2i(4, 7), Vector2i(3, 7))) # Kd1
+	assert(chess.piece(Vector2i(6, 2)) == "bP" and chess.active_transforms.is_empty())
 
 	# A rook replaced on its starting square loses castling rights permanently.
 	cells = _empty()
@@ -190,11 +248,19 @@ func run() -> void:
 	assert(visual_game.restore_state(rights_state))
 	scene.call("_refresh")
 	var controls: HFlowContainer = scene.get("_transform_buttons")
-	assert(controls.get_child_count() == 1, "The recovered knight needs an action button")
-	scene.call("_set_transform_kind", "N")
+	assert(controls.get_child_count() == 5, "Transformation buttons remain persistent")
+	var buttons: Dictionary = scene.get("_transform_option_buttons")
+	var knight_button: Button = buttons["N"]
+	assert(knight_button.visible)
+	knight_button.pressed.emit() # Exercise the actual signal and refreshing in its callback.
+	assert(is_instance_valid(knight_button), "Selecting a transformation must not delete the pressed button")
+	assert(buttons["N"] == knight_button and controls.get_child_count() == 5)
 	scene.call("_select_cell", Vector2i(7, 7))
 	assert(visual_game.piece(Vector2i(7, 7)) == "wN")
+	assert(scene.get_node("ChessTokens").get_child_count() == 3,
+		"Only the changed piece is replaced: no duplicated visual tokens")
+	assert(is_instance_valid(knight_button) and controls.get_child_count() == 5)
 	scene.queue_free()
 	await process_frame
-	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, captured-piece transformation")
+	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, temporary transformation, UI safety")
 	quit()
