@@ -156,22 +156,45 @@ static func _find_king(cells: Array[String], side: String) -> Vector2i:
 	return Vector2i(index % 8, index / 8)
 
 
-static func _is_attacked(cells: Array[String], target: Vector2i, attacker: String) -> bool:
+static func _wall_blocks(lines: Array[Dictionary], side: String, from: Vector2i, to: Vector2i) -> bool:
+	for wall in lines:
+		if wall["owner"] == side:
+			continue
+		var index: int = wall["index"]
+		var a: int = from.y if wall["axis"] == "rank" else from.x
+		var b: int = to.y if wall["axis"] == "rank" else to.x
+		if b == index or (a < index and b > index) or (a > index and b < index):
+			return true
+	return false
+
+
+func wall_at(cell: Vector2i) -> Array[String]:
+	var owners: Array[String] = []
+	for wall in walls:
+		if (wall["axis"] == "rank" and cell.y == wall["index"]) or (wall["axis"] == "file" and cell.x == wall["index"]):
+			owners.append(String(wall["owner"]))
+	return owners
+
+
+static func _is_attacked(cells: Array[String], target: Vector2i, attacker: String, barriers: Array[Dictionary] = []) -> bool:
 	# Pawns attack diagonally regardless of occupancy of their forward square.
 	var forward := -1 if attacker == "w" else 1
 	for dx in [-1, 1]:
-		if _at(cells, target - Vector2i(dx, forward)) == attacker + "P":
+		var source := target - Vector2i(dx, forward)
+		if _at(cells, source) == attacker + "P" and not _wall_blocks(barriers, attacker, source, target):
 			return true
 	for delta in KNIGHT_JUMPS:
-		if _at(cells, target + delta) == attacker + "N":
+		if _at(cells, target + delta) == attacker + "N" and not _wall_blocks(barriers, attacker, target + delta, target):
 			return true
 	for dx in range(-1, 2):
 		for dy in range(-1, 2):
-			if (dx != 0 or dy != 0) and _at(cells, target + Vector2i(dx, dy)) == attacker + "K":
+			if (dx != 0 or dy != 0) and _at(cells, target + Vector2i(dx, dy)) == attacker + "K" and not _wall_blocks(barriers, attacker, target + Vector2i(dx, dy), target):
 				return true
 	for delta in STRAIGHTS + DIAGONALS:
 		var pos: Vector2i = target + delta
 		while inside(pos):
+			if _wall_blocks(barriers, attacker, pos, target):
+				break
 			var code := _at(cells, pos)
 			if code != ".":
 				if code.begins_with(attacker):
@@ -193,7 +216,7 @@ func _add_target(options: Array[Dictionary], from: Vector2i, to: Vector2i, extra
 		return
 	var origin := piece(from)
 	var destination := piece(to)
-	if destination.begins_with(origin.substr(0, 1)) or is_royal(to):
+	if destination.begins_with(origin.substr(0, 1)) or is_royal(to) or _wall_blocks(walls, origin.substr(0, 1), from, to):
 		return
 	var entry: Dictionary = {"to": to}
 	entry.merge(extra)
@@ -239,6 +262,8 @@ func _pseudo_moves(from: Vector2i) -> Array[Dictionary]:
 			for delta in directions:
 				var to := from + delta
 				while inside(to):
+					if _wall_blocks(walls, side, from, to):
+						break
 					if piece(to) == ".":
 						_add_target(options, from, to)
 					else:
@@ -251,14 +276,14 @@ func _pseudo_moves(from: Vector2i) -> Array[Dictionary]:
 					if dx != 0 or dy != 0:
 						_add_target(options, from, from + Vector2i(dx, dy))
 			var rank := 7 if side == "w" else 0
-			if from == Vector2i(4, rank) and not _is_attacked(board, from, enemy):
+			if from == Vector2i(4, rank) and is_royal(from) and not bool(coup_used[side]) and not _is_attacked(board, from, enemy, walls):
 				if bool(castling.get(side + "K", false)) and piece(Vector2i(7, rank)) == side + "R":
 					if piece(Vector2i(5, rank)) == "." and piece(Vector2i(6, rank)) == ".":
-						if not _is_attacked(board, Vector2i(5, rank), enemy) and not _is_attacked(board, Vector2i(6, rank), enemy):
+						if not _is_attacked(board, Vector2i(5, rank), enemy, walls) and not _is_attacked(board, Vector2i(6, rank), enemy, walls) and not _wall_blocks(walls, side, from, Vector2i(6, rank)) and not _wall_blocks(walls, side, Vector2i(7, rank), Vector2i(5, rank)):
 							options.append({"to": Vector2i(6, rank), "castle": "K"})
 				if bool(castling.get(side + "Q", false)) and piece(Vector2i(0, rank)) == side + "R":
 					if piece(Vector2i(1, rank)) == "." and piece(Vector2i(2, rank)) == "." and piece(Vector2i(3, rank)) == ".":
-						if not _is_attacked(board, Vector2i(3, rank), enemy) and not _is_attacked(board, Vector2i(2, rank), enemy):
+						if not _is_attacked(board, Vector2i(3, rank), enemy, walls) and not _is_attacked(board, Vector2i(2, rank), enemy, walls) and not _wall_blocks(walls, side, from, Vector2i(2, rank)) and not _wall_blocks(walls, side, Vector2i(0, rank), Vector2i(3, rank)):
 							options.append({"to": Vector2i(2, rank), "castle": "Q"})
 	return options
 
@@ -269,6 +294,8 @@ static func _apply_to(cells: Array[String], from: Vector2i, move: Dictionary, pr
 	_put(cells, from, ".")
 	if bool(move.get("en_passant", false)):
 		_put(cells, Vector2i(to.x, from.y), ".")
+	for at in move.get("sweep", []):
+		_put(cells, at, ".")
 	if String(move.get("castle", "")) != "":
 		var rank := from.y
 		if move["castle"] == "K":
@@ -292,8 +319,8 @@ func legal_moves(from: Vector2i) -> Array[Dictionary]:
 	for move in _pseudo_moves(from):
 		var hypothetical: Array[String] = board.duplicate()
 		_apply_to(hypothetical, from, move)
-		var king := _find_king(hypothetical, turn)
-		if king != NO_SQUARE and not _is_attacked(hypothetical, king, opposite(turn)):
+		var king := to if piece_id(from) == int(royal_ids[turn]) else king_square(turn)
+		if king != NO_SQUARE and not _is_attacked(hypothetical, king, opposite(turn), walls):
 			result.append(move)
 	return result
 
