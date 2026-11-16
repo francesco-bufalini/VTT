@@ -246,6 +246,19 @@ func run() -> void:
 	assert(not chess._used(chess.piece_id(Vector2i(0, 6)), "dash"))
 	assert(chess.play_power(Vector2i(0, 6), Vector2i(0, 3)))
 
+	# A used pawn can be captured and resurrected but cannot dash again.
+	chess.reset()
+	var reused_uid := chess.piece_id(Vector2i(0, 6))
+	assert(chess.play_power(Vector2i(0, 6), Vector2i(0, 3))) # a5
+	assert(chess.play(Vector2i(1, 1), Vector2i(1, 2))) # ...b6
+	assert(chess.play(Vector2i(4, 6), Vector2i(4, 5))) # e3
+	assert(chess.play(Vector2i(1, 2), Vector2i(0, 3))) # ...bxa5
+	assert(chess.captured_pieces["w"] == ["P"])
+	assert(chess.can_revive(Vector2i(5, 7)))
+	assert(chess.revive(Vector2i(5, 7), Vector2i(4, 6), "P"))
+	assert(chess.piece_id(Vector2i(4, 6)) == reused_uid)
+	assert(chess._used(reused_uid, "dash") and chess.power_moves(Vector2i(4, 6)).is_empty())
+
 	# R: a horizontal magic wall prevents enemy traversal and attacks.
 	cells = _empty()
 	_index(cells, 4, 7, "wK")
