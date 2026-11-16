@@ -142,6 +142,8 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	token.position = Vector3(float(cell.x) - 3.5, 0.15, float(cell.y) - 3.5)
 	token.set_meta("chess_piece", code)
 	token.set_meta("chess_square", cell)
+	token.set_meta("royal", game.is_royal(cell))
+	token.set_meta("cursed", game.is_cursed(cell))
 	_piece_root.add_child(token)
 	_piece_nodes[cell.y * 8 + cell.x] = token
 	var pale := side == "w"
@@ -165,7 +167,7 @@ func _make_piece(code: String, cell: Vector2i) -> void:
 	cap.height = cap.radius * 2.0
 	_mesh(token, cap, trim, Vector3(0, 0.13 + height + 0.08, 0))
 	var symbol := Label3D.new()
-	symbol.text = kind
+	symbol.text = kind + (" ★" if game.is_royal(cell) and kind == "Q" else "") + (" ✖" if game.is_cursed(cell) else "")
 	symbol.font_size = 90
 	symbol.pixel_size = 0.0045
 	symbol.modulate = Color(0.16, 0.12, 0.10) if pale else Color(1.0, 0.93, 0.76)
@@ -427,8 +429,6 @@ func _finish_action() -> void:
 	_power_mode = ""
 	_power_kind = ""
 	_transform_kind = ""
-	_power_mode = ""
-	_power_kind = ""
 	_selected = NO_SQUARE
 	_destinations.clear()
 	_promotion_is_power = false
@@ -454,7 +454,7 @@ func _cancel_transformation() -> void:
 
 func _reserve_description(side: String) -> String:
 	var parts: Array[String] = []
-	for kind in ["Q", "R", "B", "N", "P"]:
+	for kind in ["Q", "R", "B", "N", "P", "K"]:
 		var count: int = game.captured_pieces[side].count(kind)
 		if count:
 			parts.append("%s×%d" % [kind, count])
@@ -482,6 +482,9 @@ func _play_move(from: Vector2i, to: Vector2i, promotion: String = "Q") -> void:
 func _reset() -> void:
 	game.reset()
 	_transform_kind = ""
+	_power_mode = ""
+	_power_kind = ""
+	_promotion_is_power = false
 	_selected = NO_SQUARE
 	_destinations.clear()
 	_promotion_from = NO_SQUARE
@@ -527,9 +530,21 @@ func _refresh() -> void:
 			var cell := Vector2i(file, rank)
 			var tile: MeshInstance3D = _tiles[rank * 8 + file]
 			var material: Material = _light_tile if (file + rank) % 2 == 0 else _dark_tile
+			var barriers: Array[String] = game.wall_at(cell)
+			if "w" in barriers:
+				material = _wall_white
+			if "b" in barriers:
+				material = _wall_black
+			if game.is_cursed(cell):
+				material = _curse_tile
+			if _power_mode == "revive" and cell != _selected and ChessRules.inside(_selected) and game.piece(cell) == ".":
+				if maxi(absi(cell.x - _selected.x), absi(cell.y - _selected.y)) == 1 and not ChessRules._wall_blocks(game.walls, game.turn, _selected, cell):
+					material = _legal_tile
+			if _power_mode == "curse" and game.piece(cell).begins_with(ChessRules.opposite(game.turn)) and not game.is_royal(cell):
+				material = _legal_tile
 			if cell == checked_king:
 				material = _checked_tile
-			if _transform_kind != "" and game.piece(cell).begins_with(game.turn) and not game.piece(cell).ends_with("K"):
+			if _transform_kind != "" and game.piece(cell).begins_with(game.turn) and not game.is_royal(cell) and not game.is_cursed(cell):
 				material = _transform_tile
 			if legal_targets.has(cell):
 				material = _legal_tile
@@ -545,7 +560,7 @@ func _refresh() -> void:
 			var code: String = game.piece(cell)
 			var existing: Node3D = _piece_nodes.get(index)
 			if existing != null and is_instance_valid(existing):
-				if String(existing.get_meta("chess_piece")) == code:
+				if String(existing.get_meta("chess_piece")) == code and bool(existing.get_meta("royal")) == game.is_royal(cell) and bool(existing.get_meta("cursed")) == game.is_cursed(cell):
 					continue
 				existing.free()
 			_piece_nodes.erase(index)
@@ -561,7 +576,39 @@ func _refresh() -> void:
 			game.piece(ChessRules._transform_square(record)).substr(1, 1),
 			String(record["original"])
 		]
+	for side in ["w", "b"]:
+		if bool(game.coup_used[side]):
+			_status_label.text += "\nLa Regina %s è il Re ★." % ("bianca" if side == "w" else "nera")
+	if not game.walls.is_empty():
+		_status_label.text += "\nMuri magici attivi: %d" % game.walls.size()
 	_undo_button.disabled = game.history.is_empty()
+	var at := _selected
+	var active_code: String = game.piece(at) if at != NO_SQUARE else "."
+	var side: String = active_code.substr(0, 1) if active_code != "." else ""
+	var belongs := side == game.turn
+	var uid := game.piece_id(at)
+	var kind: String = active_code.substr(1, 1) if active_code != "." else ""
+	_power_buttons["dash"].visible = belongs and kind == "P" and not game._used(uid, "dash") and not game.power_moves(at).is_empty()
+	_power_buttons["sweep"].visible = belongs and kind == "N" and not game._used(uid, "sweep") and not game.power_moves(at).is_empty()
+	_power_buttons["wall_rank"].visible = belongs and kind == "R" and not game._used(uid, "wall")
+	_power_buttons["wall_file"].visible = belongs and kind == "R" and not game._used(uid, "wall")
+	_power_buttons["revive"].visible = belongs and game.can_revive(at) and not game.available_revivals(at).is_empty()
+	_power_buttons["curse"].visible = belongs and game.can_curse(at)
+	_power_buttons["coup"].visible = kind == "Q" and not bool(game.coup_used.get(side, true)) and not game.is_royal(at)
+	for key in ["dash", "sweep", "wall_rank", "wall_file", "revive", "curse", "coup"]:
+		_power_buttons[key].disabled = game.finished or _promotion_box.visible
+	_power_buttons["cancel"].visible = _power_mode != ""
+	for key in _revive_buttons:
+		var revive_button: Button = _revive_buttons[key]
+		revive_button.visible = _power_mode == "revive_choose" and key in game.available_revivals(_selected)
+	_power_summary.text = "Seleziona un pezzo per vedere i poteri rimasti."
+	if active_code != ".":
+		_power_summary.text = "Pezzo: %s %s · %s" % [
+			"Bianco" if side == "w" else "Nero", kind,
+			"potere disponibile" if not game._data(uid).get("used", []).size() else "poteri già usati: " + ", ".join(game._data(uid).get("used", []))
+		]
+	if _power_mode != "":
+		_power_summary.text += "\nPotere selezionato: %s" % _power_mode
 	_transform_summary.text = "Bianchi persi: %s\nNeri persi: %s" % [
 		_reserve_description("w"), _reserve_description("b")
 	]
@@ -575,7 +622,9 @@ func _refresh() -> void:
 	cancel_button.visible = _transform_kind != ""
 	_transform_box.visible = not game.finished
 	if not _promotion_box.visible:
-		if game.finished:
+		if _power_mode != "":
+			_help_label.text = ("Scegli il pezzo da resuscitare." if _power_mode == "revive_choose" else "Clicca una casella verde per attivare il potere; usa Annulla potere per tornare alle mosse normali.")
+		elif game.finished:
 			_help_label.text = "Partita conclusa. Premi Nuova partita per ricominciare."
 		elif _transform_kind != "":
 			_help_label.text = "Clicca un tuo pezzo azzurro (non il Re) per trasformarlo in %s. Poi esegui la normale mossa." % _transform_kind
