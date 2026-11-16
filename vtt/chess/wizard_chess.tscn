@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://vtt/chess/wizard_chess.gd" id="1_chess"]
+
+[node name="ScacchiDeiMaghi" type="Node3D"]
+script = ExtResource("1_chess")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+current = true
+fov = 48.0
+near = 0.05
+far = 100.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+rotation_degrees = Vector3(-55, -30, 0)
+light_color = Color(1, 0.91, 0.72, 1)
+light_energy = 2.0
+shadow_enabled = true
+
+[node name="UI" type="CanvasLayer" parent="."]
