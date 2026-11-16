@@ -27,6 +27,14 @@ I poteri si attivano selezionando un pezzo e usando il pulsante corrispondente n
 
 Il potere del Cavallo usa un tragitto definito (prima la parte lunga della L): la disposizione delle caselle intermedie è quindi rilevante. Un pezzo riportato in campo o trasformato conserva la propria identità per il conteggio degli utilizzi. Le trasformazioni temporanee già presenti nel minigioco continuano a scadere all'inizio del turno successivo del proprietario.
 
+## Aspetto dei pezzi: set Lewis
+
+I 32 segnalini impiegano ora **sei modelli scultorei distinti** derivati dal set Lewis fornito in `lewis_chess_set.glb`: Pedone, Torre, Cavallo, Alfiere, Regina e Re. L'originale contiene 11 modelli e texture; per il minigioco sono stati selezionati i sei tipi corrispondenti e alleggeriti, conservandone la geometria essenziale. Le mesh ottimizzate sono salvate nei file `vtt/chess/lewis_*.gd` e decodificate da `lewis_mesh.gd`: **non è necessario aggiungere manualmente il GLB** all'installazione del gioco.
+
+I **bianchi** hanno superficie in avorio chiaro con base dorata, i **neri** sono in una finitura scura color ardesia/viola con base viola. Le forme e i codici dei pezzi sono identici per entrambi i colori; le due finiture sono facilmente distinguibili anche sulla scacchiera. Le lettere, la stella ★ del Re-Regina e la maledizione ✖ rimangono visibili. Una trasformazione, una promozione, una cattura o una resurrezione aggiorna il modello corretto senza dover ricostruire le altre sculture. Il rendering condivide una mesh per tipo per limitare i tempi di aggiornamento.
+
+**Nota di fedeltà:** i modelli sono derivati direttamente dalla geometria 3D del file GLB, ma semplificati (circa 290–400 triangoli per modello) e ricolorati; non incorporano le texture fotografiche originali. Il file completo fornito resta il riferimento per eventuali versioni ad alta definizione.
+
 ## Regole e dati
 
 Il motore in `vtt/chess/chess_rules.gd` è indipendente dalla grafica e non considera valide le mosse che lascerebbero il proprio re sotto scacco. Le riserve di pezzi catturati sono distinte per colore e persistono nel salvataggio; anche la forma originale e la casella del token trasformato vengono salvate per garantirne il ritorno al turno seguente. La trasformazione non concede un'altra mossa o un secondo utilizzo nello stesso turno. Il motore evita di dichiarare scacco matto se una trasformazione seguita da una mossa legale può salvare il Re, e non dichiara patta per materiale insufficiente se restano pezzi recuperabili nelle riserve. Gestisce arrocco (incluse caselle attraversate sotto attacco e diritti persi), presa en passant, promozione, scacco, scacco matto, stallo, patta per materiale insufficiente, triplice ripetizione e regola delle 50 mosse. La partita è **locale, a due giocatori sullo stesso computer**, senza avversario controllato dall'IA.
