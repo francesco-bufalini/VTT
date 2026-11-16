@@ -319,7 +319,7 @@ func legal_moves(from: Vector2i) -> Array[Dictionary]:
 	for move in _pseudo_moves(from):
 		var hypothetical: Array[String] = board.duplicate()
 		_apply_to(hypothetical, from, move)
-		var king := to if piece_id(from) == int(royal_ids[turn]) else king_square(turn)
+		var king: Vector2i = move["to"] if piece_id(from) == int(royal_ids[turn]) else king_square(turn)
 		if king != NO_SQUARE and not _is_attacked(hypothetical, king, opposite(turn), walls):
 			result.append(move)
 	return result
@@ -420,7 +420,7 @@ func power_moves(from: Vector2i) -> Array[Dictionary]:
 				result.append(entry)
 	elif kind == "N" and not _used(uid, "sweep"):
 		for offset in KNIGHT_JUMPS:
-			var to := from + offset
+			var to: Vector2i = from + offset
 			if not inside(to):
 				continue
 			# Follow the long leg first, then the short leg (three squares total).
@@ -442,7 +442,7 @@ func power_moves(from: Vector2i) -> Array[Dictionary]:
 	for move in result:
 		var hypothetical: Array[String] = board.duplicate()
 		_apply_to(hypothetical, from, move)
-		var king := move["to"] if uid == int(royal_ids[turn]) else king_square(turn)
+		var king: Vector2i = move["to"] if uid == int(royal_ids[turn]) else king_square(turn)
 		if king != NO_SQUARE and not _is_attacked(hypothetical, king, opposite(turn), walls):
 			safe.append(move)
 	return safe
