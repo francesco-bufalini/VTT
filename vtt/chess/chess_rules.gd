@@ -26,6 +26,14 @@ var transformed_this_turn := false
 # Temporary forms keyed by owner. Square follows the token when it moves.
 # Record: {"square": [file, rank], "original": "P"/"N"/"B"/"R"/"Q"}.
 var active_transforms: Dictionary = {}
+# A stable identity follows each token through moves and captures.
+var piece_ids: Array[int] = []
+var piece_data: Dictionary = {}
+var next_piece_id := 1
+var captured_ids := {"w": [], "b": []}
+var royal_ids := {"w": 0, "b": 0}
+var coup_used := {"w": false, "b": false}
+var walls: Array[Dictionary] = []
 var finished := false
 var status := ""
 
@@ -54,6 +62,19 @@ func reset() -> void:
 	captured_pieces = {"w": [], "b": []}
 	transformed_this_turn = false
 	active_transforms.clear()
+	piece_ids.clear()
+	piece_data.clear()
+	next_piece_id = 1
+	captured_ids = {"w": [], "b": []}
+	coup_used = {"w": false, "b": false}
+	walls.clear()
+	for i in range(board.size()):
+		piece_ids.append(0)
+		if board[i] != ".":
+			var uid := _new_piece(board[i])
+			piece_ids[i] = uid
+			if board[i].ends_with("K"):
+				royal_ids[board[i].substr(0, 1)] = uid
 	position_counts.clear()
 	finished = false
 	_record_position()
@@ -82,8 +103,50 @@ func piece(pos: Vector2i) -> String:
 	return _at(board, pos)
 
 
+func _new_piece(code: String) -> int:
+	var uid := next_piece_id
+	next_piece_id += 1
+	piece_data[str(uid)] = {"side": code.substr(0, 1), "used": [], "cursed": false}
+	return uid
+
+
+func piece_id(pos: Vector2i) -> int:
+	return piece_ids[pos.y * 8 + pos.x] if inside(pos) else 0
+
+
+func _data(uid: int) -> Dictionary:
+	return piece_data.get(str(uid), {})
+
+
+func _used(uid: int, power: String) -> bool:
+	return power in _data(uid).get("used", [])
+
+
+func _spend(uid: int, power: String) -> void:
+	var info: Dictionary = _data(uid)
+	var used: Array = info.get("used", [])
+	if power not in used:
+		used.append(power)
+	info["used"] = used
+	piece_data[str(uid)] = info
+
+
+func is_cursed(pos: Vector2i) -> bool:
+	return bool(_data(piece_id(pos)).get("cursed", false))
+
+
+func is_royal(pos: Vector2i) -> bool:
+	var code := piece(pos)
+	return code != "." and piece_id(pos) == int(royal_ids.get(code.substr(0, 1), 0))
+
+
+func _royal_square(side: String) -> Vector2i:
+	var index := piece_ids.find(int(royal_ids.get(side, 0)))
+	return Vector2i(index % 8, index / 8) if index != -1 else NO_SQUARE
+
+
 func king_square(side: String) -> Vector2i:
-	return _find_king(board, side)
+	return _royal_square(side)
 
 
 static func _find_king(cells: Array[String], side: String) -> Vector2i:
@@ -121,8 +184,8 @@ static func _is_attacked(cells: Array[String], target: Vector2i, attacker: Strin
 
 
 func in_check(side: String) -> bool:
-	var king := _find_king(board, side)
-	return king != NO_SQUARE and _is_attacked(board, king, opposite(side))
+	var king := king_square(side)
+	return king != NO_SQUARE and _is_attacked(board, king, opposite(side), walls)
 
 
 func _add_target(options: Array[Dictionary], from: Vector2i, to: Vector2i, extra: Dictionary = {}) -> void:
@@ -130,7 +193,7 @@ func _add_target(options: Array[Dictionary], from: Vector2i, to: Vector2i, extra
 		return
 	var origin := piece(from)
 	var destination := piece(to)
-	if destination.begins_with(origin.substr(0, 1)) or destination.ends_with("K"):
+	if destination.begins_with(origin.substr(0, 1)) or is_royal(to):
 		return
 	var entry: Dictionary = {"to": to}
 	entry.merge(extra)
@@ -252,8 +315,10 @@ func available_transformations() -> Array[String]:
 	var available: Array[String] = []
 	if finished or transformed_this_turn:
 		return available
-	for kind in captured_pieces.get(turn, []):
-		if kind not in available:
+	for i in range(captured_pieces[turn].size()):
+		var kind: String = captured_pieces[turn][i]
+		var uid: int = captured_ids[turn][i]
+		if kind not in available and not bool(_data(uid).get("cursed", false)):
 			available.append(kind)
 	return available
 
@@ -262,10 +327,18 @@ func transform(at: Vector2i, kind: String) -> bool:
 	if finished or transformed_this_turn or active_transforms.has(turn) or not inside(at) or kind not in available_transformations():
 		return false
 	var previous := piece(at)
-	if not previous.begins_with(turn) or previous.ends_with("K"):
+	if not previous.begins_with(turn) or is_royal(at) or is_cursed(at):
+		return false
+	var reserve_index := -1
+	for i in range(captured_pieces[turn].size()):
+		if captured_pieces[turn][i] == kind and not bool(_data(captured_ids[turn][i]).get("cursed", false)):
+			reserve_index = i
+			break
+	if reserve_index == -1:
 		return false
 	history.append(_state_without_history())
-	captured_pieces[turn].erase(kind)
+	captured_pieces[turn].remove_at(reserve_index)
+	captured_ids[turn].remove_at(reserve_index)
 	if previous.ends_with("R"):
 		_revoke_corner(at)
 	_put(board, at, turn + kind)
@@ -349,7 +422,7 @@ func play(from: Vector2i, to: Vector2i, promotion: String = "Q") -> bool:
 
 
 func _position_key() -> String:
-	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_pieces) + ":" + str(transformed_this_turn) + ":" + JSON.stringify(active_transforms)
+	return JSON.stringify(board) + ":" + turn + ":" + JSON.stringify(castling) + ":" + str(en_passant) + ":" + JSON.stringify(captured_ids) + ":" + JSON.stringify(royal_ids) + ":" + JSON.stringify(walls) + ":" + JSON.stringify(piece_data) + ":" + str(transformed_this_turn) + ":" + JSON.stringify(active_transforms)
 
 
 func _record_position() -> void:
@@ -391,9 +464,9 @@ func _has_transform_escape() -> bool:
 		return false
 	for index in range(board.size()):
 		var previous := board[index]
-		if not previous.begins_with(turn) or previous.ends_with("K"):
+		if not previous.begins_with(turn) or piece_ids[index] == int(royal_ids[turn]) or bool(_data(piece_ids[index]).get("cursed", false)):
 			continue
-		for kind in captured_pieces[turn]:
+		for kind in available_transformations():
 			var old_rights: Dictionary = castling.duplicate()
 			if previous.ends_with("R"):
 				_revoke_corner(Vector2i(index % 8, index / 8))
@@ -442,7 +515,11 @@ func _state_without_history() -> Dictionary:
 		"position_counts": position_counts.duplicate(true),
 		"captured_pieces": captured_pieces.duplicate(true),
 		"transformed_this_turn": transformed_this_turn,
-		"active_transforms": active_transforms.duplicate(true)
+		"active_transforms": active_transforms.duplicate(true),
+		"piece_ids": piece_ids.duplicate(), "piece_data": piece_data.duplicate(true),
+		"next_piece_id": next_piece_id, "captured_ids": captured_ids.duplicate(true),
+		"royal_ids": royal_ids.duplicate(), "coup_used": coup_used.duplicate(),
+		"walls": walls.duplicate(true)
 	}
 
 
@@ -463,7 +540,7 @@ func restore_state(data: Dictionary) -> bool:
 		]):
 			return false
 		parsed.append(code)
-	if parsed.count("wK") != 1 or parsed.count("bK") != 1:
+	if not data.has("royal_ids") and (parsed.count("wK") != 1 or parsed.count("bK") != 1):
 		return false
 	var next_turn: Variant = data.get("turn")
 	var rights: Variant = data.get("castling")
@@ -488,7 +565,7 @@ func restore_state(data: Dictionary) -> bool:
 		if not entries is Array or entries.size() > 32:
 			return false
 		for kind in entries:
-			if kind not in ["P", "N", "B", "R", "Q"]:
+			if kind not in ["P", "N", "B", "R", "Q", "K"]:
 				return false
 			parsed_reserves[side].append(kind)
 	var used: Variant = data.get("transformed_this_turn", false)
@@ -526,7 +603,72 @@ func restore_state(data: Dictionary) -> bool:
 					if previous is String and previous.begins_with(next_turn) and not previous.ends_with("K") and previous != parsed[i]:
 						parsed_transforms[next_turn] = {"square": [i % 8, i / 8], "original": previous.substr(1, 1)}
 						break
+	var raw_ids: Variant = data.get("piece_ids", [])
+	var raw_info: Variant = data.get("piece_data", {})
+	var raw_captured: Variant = data.get("captured_ids", {})
+	var raw_royals: Variant = data.get("royal_ids", {})
+	if not raw_ids is Array or not raw_info is Dictionary:
+		return false
+	var parsed_ids: Array[int] = []
+	var parsed_info: Dictionary = {}
+	var parsed_captured := {"w": [], "b": []}
+	var parsed_royals := {"w": 0, "b": 0}
+	var id_next := 1
+	if raw_ids.size() == 64 and raw_royals is Dictionary and raw_captured is Dictionary:
+		for uid in raw_ids:
+			if not uid is int or uid < 0:
+				return false
+			parsed_ids.append(uid)
+		parsed_info = raw_info.duplicate(true)
+		for side in ["w", "b"]:
+			var raw_pool: Variant = raw_captured.get(side, [])
+			if not raw_pool is Array or raw_pool.size() != parsed_reserves[side].size():
+				return false
+			parsed_captured[side] = raw_pool.duplicate()
+			parsed_royals[side] = int(raw_royals.get(side, 0))
+		id_next = int(data.get("next_piece_id", 1))
+		for i in range(64):
+			if parsed[i] == "." and parsed_ids[i] != 0:
+				return false
+			if parsed[i] != "." and (parsed_ids[i] == 0 or not parsed_info.has(str(parsed_ids[i]))):
+				return false
+		for side in ["w", "b"]:
+			if parsed_ids.find(parsed_royals[side]) < 0:
+				return false
+	else:
+		# Saves from before piece powers receive stable identities on import.
+		for i in range(64):
+			parsed_ids.append(0)
+			if parsed[i] != ".":
+				parsed_ids[i] = id_next
+				parsed_info[str(id_next)] = {"side": parsed[i].substr(0, 1), "used": [], "cursed": false}
+				if parsed[i].ends_with("K"):
+					parsed_royals[parsed[i].substr(0, 1)] = id_next
+				id_next += 1
+		for side in ["w", "b"]:
+			for kind in parsed_reserves[side]:
+				parsed_info[str(id_next)] = {"side": side, "used": [], "cursed": false}
+				parsed_captured[side].append(id_next)
+				id_next += 1
+	if id_next < 1:
+		return false
+	var raw_walls: Variant = data.get("walls", [])
+	var raw_coup: Variant = data.get("coup_used", {})
+	if not raw_walls is Array or not raw_coup is Dictionary:
+		return false
+	for line in raw_walls:
+		if not line is Dictionary or line.get("owner") not in ["w", "b"] or line.get("axis") not in ["rank", "file"] or not line.get("index") is int or int(line["index"]) not in range(8):
+			return false
 	board = parsed
+	piece_ids = parsed_ids
+	piece_data = parsed_info
+	next_piece_id = id_next
+	captured_ids = parsed_captured
+	royal_ids = parsed_royals
+	coup_used = {"w": bool(raw_coup.get("w", false)), "b": bool(raw_coup.get("b", false))}
+	walls.clear()
+	for line in raw_walls:
+		walls.append(line.duplicate(true))
 	turn = next_turn
 	castling = {
 		"wK": bool(rights.get("wK", false)), "wQ": bool(rights.get("wQ", false)),
