@@ -131,7 +131,7 @@ func run() -> void:
 	assert(chess.active_transforms["b"]["square"] == [5, 2], "Transformation follows the token")
 	var moved_snapshot: Dictionary = chess.export_state()
 	assert(reloaded.restore_state(moved_snapshot))
-	assert(reloaded.active_transforms["b"]["square"] == [5, 2], "Save preserves transformed identity"
+	assert(reloaded.active_transforms["b"]["square"] == [5, 2], "Save preserves transformed identity")
 	assert(reloaded.play(Vector2i(4, 7), Vector2i(3, 7)), "White completes the next move")
 	assert(reloaded.turn == "b" and reloaded.piece(Vector2i(5, 2)) == "bP",
 		"At the start of Black's next turn, the knight returns to the original pawn")
