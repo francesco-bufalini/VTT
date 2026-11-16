@@ -82,6 +82,7 @@ func run() -> void:
 	assert(_has(chess.legal_moves(Vector2i(4, 3)), Vector2i(3, 2)))
 	assert(chess.play(Vector2i(4, 3), Vector2i(3, 2)))
 	assert(chess.piece(Vector2i(3, 3)) == "." and chess.piece(Vector2i(3, 2)) == "wP")
+	assert(chess.captured_pieces["b"] == ["P"], "En passant sends the pawn to the owner\u0027s captured pool")
 
 	# Underpromotion must not silently turn into a queen.
 	cells = _empty()
@@ -100,6 +101,76 @@ func run() -> void:
 	assert(chess.set_position(cells, "b"))
 	assert(chess.finished and "stallo" in chess.status)
 
+	# A captured piece belongs to its original owner, who may restore it once
+	# at the start of a later turn, then must play a normal move.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	_index(cells, 0, 4, "wR") # a4
+	_index(cells, 0, 1, "bN") # a7
+	_index(cells, 7, 1, "bP") # h7
+	assert(chess.set_position(cells, "w"))
+	assert(chess.available_transformations().is_empty())
+	assert(not chess.transform(Vector2i(0, 4), "N"), "You cannot invent lost pieces")
+	assert(chess.play(Vector2i(0, 4), Vector2i(0, 1))) # Rxa7
+	assert(chess.turn == "b" and chess.captured_pieces["b"] == ["N"])
+	assert(not chess.transform(Vector2i(4, 0), "N"), "Kings are never transformable")
+	assert(not chess.transform(Vector2i(0, 1), "N"), "Enemy pieces cannot be transformed")
+	assert(chess.transform(Vector2i(7, 1), "N"), "Replace a friendly pawn with the captured knight")
+	assert(chess.turn == "b" and chess.piece(Vector2i(7, 1)) == "bN")
+	assert(chess.captured_pieces["b"].is_empty() and chess.transformed_this_turn)
+	assert(not chess.transform(Vector2i(7, 1), "N"), "Only one transformation per turn")
+	var transformed_snapshot: Dictionary = chess.export_state()
+	var reloaded = ChessRules.new()
+	assert(reloaded.restore_state(transformed_snapshot))
+	assert(reloaded.piece(Vector2i(7, 1)) == "bN" and reloaded.transformed_this_turn)
+	assert(reloaded.available_transformations().is_empty())
+	assert(chess.play(Vector2i(7, 1), Vector2i(5, 0))) # ...Nf8
+	assert(chess.turn == "w" and not chess.transformed_this_turn)
+	assert(chess.undo() and chess.piece(Vector2i(7, 1)) == "bN")
+	assert(chess.turn == "b" and chess.transformed_this_turn)
+	assert(chess.undo() and chess.piece(Vector2i(7, 1)) == "bP")
+	assert(chess.captured_pieces["b"] == ["N"] and not chess.transformed_this_turn)
+	assert(chess.play(Vector2i(7, 1), Vector2i(7, 2)), "You may skip transformation")
+
+	# A rook replaced on its starting square loses castling rights permanently.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 7, 7, "wR")
+	_index(cells, 4, 0, "bK")
+	var rights_state: Dictionary = {
+		"board": cells.duplicate(), "turn": "w", "castling": {"wK": true},
+		"en_passant": [-1, -1], "captured_pieces": {"w": ["N"], "b": []}
+	}
+	assert(chess.restore_state(rights_state))
+	assert(chess.transform(Vector2i(7, 7), "N"))
+	assert(not chess.castling["wK"])
+	assert(chess.undo() and chess.castling["wK"])
+
+	# Transformations may allow an escape from what would normally be mate.
+	chess.reset()
+	assert(chess.play(Vector2i(5, 6), Vector2i(5, 5))) # f3
+	assert(chess.play(Vector2i(4, 1), Vector2i(4, 3))) # ...e5
+	assert(chess.play(Vector2i(6, 6), Vector2i(6, 4))) # g4
+	var mate_state: Dictionary = chess.export_state()
+	mate_state["captured_pieces"]["w"] = ["N"]
+	assert(chess.restore_state(mate_state))
+	assert(chess.play(Vector2i(3, 0), Vector2i(7, 4))) # ...Qh4+
+	assert(not chess.finished, "A possible recovery prevents premature checkmate")
+	assert(chess.transform(Vector2i(5, 5), "N"))
+	assert(chess.play(Vector2i(5, 5), Vector2i(7, 4)), "The recovered knight can capture the checking queen")
+
+	# Material kept in a reserve prevents an automatic insufficient-material draw.
+	cells = _empty()
+	_index(cells, 4, 7, "wK")
+	_index(cells, 4, 0, "bK")
+	var kings_state: Dictionary = {
+		"board": cells.duplicate(), "turn": "w", "castling": {},
+		"en_passant": [-1, -1], "captured_pieces": {"w": ["Q"], "b": []}
+	}
+	assert(chess.restore_state(kings_state))
+	assert(not chess.finished, "Restorable material may still enable a future mate")
+
 	# Persistence is per scenario, independent from VTT map snapshots.
 	chess.reset()
 	assert(chess.play(Vector2i(4, 6), Vector2i(4, 4)))
@@ -116,5 +187,5 @@ func run() -> void:
 		"The scenario must spawn all 32 generic chess piece tokens")
 	scene.queue_free()
 	await process_frame
-	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence")
+	print("PASS: wizard chess board, turns, legality, mate, stalemate, castle, en passant, promotion, undo, persistence, captured-piece transformation")
 	quit()
