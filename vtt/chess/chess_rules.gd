@@ -98,7 +98,7 @@ static func _is_attacked(cells: Array[String], target: Vector2i, attacker: Strin
 			if (dx != 0 or dy != 0) and _at(cells, target + Vector2i(dx, dy)) == attacker + "K":
 				return true
 	for delta in STRAIGHTS + DIAGONALS:
-		var pos := target + delta
+		var pos: Vector2i = target + delta
 		while inside(pos):
 			var code := _at(cells, pos)
 			if code != ".":
